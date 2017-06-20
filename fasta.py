@@ -64,7 +64,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
     :param max_backtracks: The maximum total number of backtracks allowed in a single iteration of the algorithm (default: 20).
     :param adaptive: Adaptively choose the stepsize by locally approximating the function as a quadratic (default: True).
     :param accelerate: Increase the stepsize at every step of the algorithm (default: False).
-    :param restart: Restart the acceleration of FISTA (default: True). Only relevant when accelerating.
+    :param restart: Restart the acceleration of FISTA. Only relevant when accelerating (default: True).
     :return: A guess at an optimizer of h.
     """
 
@@ -103,6 +103,9 @@ def fasta(A, At, f, gradf, g, proxg, x0,
     tau_hist = np.zeros(max_iters)
     f_hist = np.zeros(max_iters)
 
+    if evaluate_objective:
+        objective_hist = np.zeros(max_iters)
+
     total_backtracks = 0
 
     # Initialize values
@@ -116,7 +119,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
 
     # Additional initialization for accelerative descent
     if accelerate:
-        x_accel1 = x0
+        x_accel1 = x1
         d_accel1 = d1
         alpha1 = 1
 
@@ -145,7 +148,8 @@ def fasta(A, At, f, gradf, g, proxg, x0,
         d1 = A(x1)
         f1 = f(d1)
 
-        # Non-monotone backtracking line search
+        # Non-monotone backtracking line search, used to guarantee convergence and balance out adaptive search if
+        # stepsizes grow too large
         if backtrack:
             # Find the maximum of the last `window` values of f
             M = np.max(f_hist[-min(i, window)])
@@ -153,9 +157,9 @@ def fasta(A, At, f, gradf, g, proxg, x0,
             # Track the number of total backtracks
             backtrack_count = 0
 
-            while f1 - (M + np.real(np.dot(Dx, gradf0) + np.norm(Dx)**2 / (2 * tau0))) > EPSILON \
+            while f1 - (M + np.real(np.dot(Dx, gradf0)) + np.norm(Dx)**2 / (2 * tau0)) > EPSILON \
                     and backtrack_count < max_backtracks or not np.isreal(f1):
-                # We've gone too far, so shrink the stepsize
+                # We've gone too far, so shrink the stepsize and try FBS again
                 tau0 *= stepsize_shrink
 
                 # Redo the FBS step
@@ -185,27 +189,9 @@ def fasta(A, At, f, gradf, g, proxg, x0,
         if stop_rule(i, residual_hist[i], norm_residual_hist[i], max_residual, tolerance):
             break
 
-        # Adaptive adjustments of stepsize using the Barzilai-Borwein method (spectral method)
-        # Approximates the function as a quadratic, for which the ideal stepsize is simply 1/a
-        if adaptive:
-            gradf1 = At(gradf(d1))
-            Dg = gradf1 + (x1hat - x0) / tau0
-            dotprod = np.real(np.dot(Dx, Dg))
-
-            tau_s = np.norm(Dx)**2 / dotprod
-            tau_m = np.max(dotprod / np.norm(Dg)**2, 0)
-
-            # Use an adaptive combination of tau_s and tau_m
-            if 2*tau_m > tau_s:
-                tau1 = tau_m
-            else:
-                tau1 = tau_s - .5*tau_m
-
-            # Ensure non-negative stepsize
-            if tau1 <= 0 or np.isinf(tau1) or np.isnan(tau1):
-                tau1 = tau0 * 1.5
-        # Use FISTA-type acceleration
-        elif accelerate:
+        # Use FISTA-type acceleration, which overestimates ("predicts") the current iterate in the direction it moved
+        # in the previous iteration
+        if accelerate:
             # Rename last round's current variables to this round's previous variables
             x_accel0 = x_accel1
             d_accel0 = d_accel1
@@ -227,13 +213,31 @@ def fasta(A, At, f, gradf, g, proxg, x0,
             x1 = x_accel1 + (alpha0 - 1) / alpha1 * (x_accel1 - x_accel0)
             d1 = d_accel1 + (alpha0 - 1) / alpha1 * (d_accel1 - d_accel0)
 
-            # Compute the next iteration's gradient
-            gradf1 = At(gradf(d1))
             f_hist[i] = f(d1)
-            tau1 = tau0
-        else:
-            gradf1 = At(gradf(d1))
-            tau1 = tau0
+
+        # Compute the next iteration's gradient
+        gradf1 = At(gradf(d1))
+        tau1 = tau0
+
+        # Adaptive adjustments of stepsize using the Barzilai-Borwein method (spectral method), which
+        # approximates the function as a quadratic, for which the ideal stepsize is simply 1/a, and dynamically
+        # select a new stepsize for each iteration
+        if adaptive:
+            Dg = gradf1 + (x1hat - x0) / tau0
+            dotprod = np.real(np.dot(Dx, Dg))
+
+            tau_s = np.norm(Dx) ** 2 / dotprod
+            tau_m = np.max(dotprod / np.norm(Dg) ** 2, 0)
+
+            # Use an adaptive combination of tau_s and tau_m
+            if 2 * tau_m > tau_s:
+                tau1 = tau_m
+            else:
+                tau1 = tau_s - .5 * tau_m
+
+            # Ensure non-negative stepsize
+            if tau1 <= 0 or np.isinf(tau1) or np.isnan(tau1):
+                tau1 = tau0 * 1.5
 
         i += 1
 
