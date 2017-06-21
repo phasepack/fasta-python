@@ -21,6 +21,7 @@ __author__ = "Noah Singer"
 from .utils import functionize
 from .stopping import hybrid_residual
 import numpy as np
+from numpy import linalg as la
 
 EPSILON = 1E-12
 
@@ -82,14 +83,14 @@ def fasta(A, At, f, gradf, g, proxg, x0,
     if not L or not tau0:
         # Compute len(x0) pairs of points
         x1 = np.random.randn(len(x0))
-        x2 = np.random.randn(len(x1))
+        x2 = np.random.randn(len(x0))
 
         # Compute the gradients at each pair of points
         gradf1 = At(gradf(A(x1)))
         gradf2 = At(gradf(A(x2)))
 
         # Approximate the Lipschitz constant of f
-        L = np.max(np.norm(gradf1 - gradf2) / np.norm(x1 - x2))
+        L = np.max(la.norm(gradf1 - gradf2) / la.norm(x1 - x2))
 
         # We're guaranteed that FBS converges for tau <= 2.0 / L
         tau0 = (2 / L) / 10
@@ -100,7 +101,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
         L = 1 / tau0
 
     # Allocate memory for convergence information
-    iterate_hist = np.zeros(max_iters)
+    iterate_hist = np.zeros((max_iters, len(x0)))
     residual_hist = np.zeros(max_iters)
     norm_residual_hist = np.zeros(max_iters)
     tau_hist = np.zeros(max_iters)
@@ -112,9 +113,9 @@ def fasta(A, At, f, gradf, g, proxg, x0,
     x1 = x0
     tau1 = tau0
 
-    d1 = A(x1)
-    f1 = f(d1)
-    gradf1 = At(gradf(x1))
+    z = A(x1)
+    f1 = f(z)
+    gradf1 = At(gradf(z))
     f_hist[0] = f1
 
     if evaluate_objective:
@@ -124,7 +125,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
     # Additional initialization for accelerative descent
     if accelerate:
         x_accel1 = x1
-        d_accel1 = d1
+        z_accel1 = z
         alpha1 = 1
 
     # Additional initialization for backtracking
@@ -136,21 +137,21 @@ def fasta(A, At, f, gradf, g, proxg, x0,
     best_quality = np.inf
 
     # Algorithm loop
-    i = 1
-    while i <= max_iters:
+    i = 0
+    while i < max_iters:
         # Rename last iteration's current variables to this round's former variables
         x0 = x1
         gradf0 = gradf1
         tau0 = tau1
 
         # Perform FBS: Take the forwards step by moving x in the direction of f's gradient
-        x1hat = x0 - tau0 * gradf(A(x0))
+        x1hat = x0 - tau0 * gradf1
         # Now take the backwards step by finding a minimizer of g close to x
         x1 = proxg(x1hat, tau0)
 
         Dx = x1 - x0
-        d1 = A(x1)
-        f1 = f(d1)
+        z = A(x1)
+        f1 = f(z)
 
         # Non-monotone backtracking line search, used to guarantee convergence and balance out adaptive search if
         # stepsizes grow too large
@@ -162,7 +163,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
             backtrack_count = 0
 
             # Check if the quadratic approximation of f1 is an upper bound; if it's not, FBS isn't guaranteed to converge
-            while f1 - (M + np.real(np.dot(Dx, gradf0)) + np.norm(Dx)**2 / (2 * tau0)) > EPSILON \
+            while f1 - (M + np.real(np.dot(Dx.T, gradf0)) + la.norm(Dx)**2 / (2 * tau0)) > EPSILON \
                     and backtrack_count < max_backtracks or not np.isreal(f1):
                 # We've gone too far, so shrink the stepsize and try FBS again
                 tau0 *= stepsize_shrink
@@ -172,8 +173,8 @@ def fasta(A, At, f, gradf, g, proxg, x0,
                 x1 = proxg(x1hat, tau0)
 
                 # Recalculate values
-                d1 = A(x1)
-                f1 = f(d1)
+                z = A(x1)
+                f1 = f(z)
                 Dx = x1 - x0
 
                 backtrack_count += 1
@@ -181,16 +182,16 @@ def fasta(A, At, f, gradf, g, proxg, x0,
             total_backtracks += backtrack_count
 
         # Record convergence information
-        iterate_hist[i] = x0
+        iterate_hist[i,:] = x0[:,0]
         tau_hist[i] = tau0
-        residual_hist[i] = np.norm(Dx) / tau0
+        residual_hist[i] = la.norm(Dx) / tau0
 
-        normalizer = np.max(np.norm(gradf0), np.norm(x1 - x1hat) / tau0) + EPSILON
+        normalizer = max(la.norm(gradf0), la.norm(x1 - x1hat) / tau0) + EPSILON
         norm_residual_hist[i] = residual_hist[i] / normalizer
 
         f_hist[i] = f1
 
-        max_residual = np.max(max_residual, residual_hist[i])
+        max_residual = max(max_residual, residual_hist[i])
 
         # If the objective is evaluated, we can find the best iterate using the objective
         if evaluate_objective:
@@ -213,16 +214,16 @@ def fasta(A, At, f, gradf, g, proxg, x0,
         if accelerate:
             # Rename last round's current variables to this round's previous variables
             x_accel0 = x_accel1
-            d_accel0 = d_accel1
+            z_accel0 = z_accel1
 
             x_accel1 = x1
-            d_accel1 = d1
+            z_accel1 = z
 
             alpha0 = alpha1
 
             # TODO: figure out if this should be epsilon
             # Prevent alpha from growing too large by restarting the acceleration
-            if restart and (x1 - x0).transpose() * (x1 - x_accel0) > EPSILON:
+            if restart and np.dot((x1 - x0).T, x1 - x_accel0) > EPSILON:
                 alpha0 = 1
 
             # Recalculate acceleration parameter
@@ -230,12 +231,12 @@ def fasta(A, At, f, gradf, g, proxg, x0,
 
             # Overestimate the next value of x by a factor of (alpha0 - 1) / alpha
             x1 = x_accel1 + (alpha0 - 1) / alpha1 * (x_accel1 - x_accel0)
-            d1 = d_accel1 + (alpha0 - 1) / alpha1 * (d_accel1 - d_accel0)
+            z = z_accel1 + (alpha0 - 1) / alpha1 * (z_accel1 - z_accel0)
 
-            f_hist[i] = f(d1)
+            f_hist[i] = f(z)
 
         # Compute the next iteration's gradient
-        gradf1 = At(gradf(d1))
+        gradf1 = At(gradf(z))
         tau1 = tau0
 
         # Adaptive adjustments of stepsize using the Barzilai-Borwein method (spectral method), which
@@ -243,12 +244,12 @@ def fasta(A, At, f, gradf, g, proxg, x0,
         # select a new stepsize for each iteration
         if adaptive:
             Dg = gradf1 + (x1hat - x0) / tau0
-            dotprod = np.real(np.dot(Dx, Dg))
+            dotprod = np.real(np.dot(Dx.T, Dg))
 
             # Least squares estimate using a
-            tau_s = np.norm(Dx) ** 2 / dotprod
+            tau_s = la.norm(Dx) ** 2 / dotprod
             # Least squares estimate using t = 1/a
-            tau_m = np.max(dotprod / np.norm(Dg) ** 2, 0)
+            tau_m = np.max(dotprod / la.norm(Dg) ** 2, 0)
 
             # Use an adaptive combination of tau_s and tau_m
             if 2 * tau_m > tau_s:

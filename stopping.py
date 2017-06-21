@@ -3,6 +3,8 @@
 Each condition will be passed the iteration number, the residual, the normalized residual, the maximum residual,
 and the tolerance."""
 
+__author__ = "Noah Singer"
+
 
 def residual(i, resid, norm_resid, max_resid, tolerance):
     """Stop when the residual becomes small."""
