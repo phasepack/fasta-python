@@ -28,24 +28,27 @@ EPSILON = 1E-12
 # TODO: check mutually allowed modes
 
 def fasta(A, At, f, gradf, g, proxg, x0,
+          adaptive=True,
+          accelerate=False,
+
           max_iters=10000,
           tolerance=1E-3,
-          stop_rule=hybrid_residual,
 
+          stop_rule=hybrid_residual,
           L=None,
           tau0=None,
 
-          backtrack=False,
+          backtrack=True,
           stepsize_shrink=0.2,
           window=10,
           max_backtracks=20,
 
-          adaptive=True,
-          accelerate=False,
           restart=True,
           evaluate_objective=False):
     """
 
+    :param adaptive: Adaptively choose the stepsize by locally approximating the function as a quadratic (default: True).
+    :param accelerate: Increase the stepsize at every step of the algorithm (default: False).
     :param A: A matrix, or a function that returns a matrix, which is equal to A*x.
     :param At: The adjoint (conjugate transpose) of A.
     :param f: A convex, differentiable function of x.
@@ -62,9 +65,8 @@ def fasta(A, At, f, gradf, g, proxg, x0,
     :param stepsize_shrink: When backtracking, aggressively decrease the step size to prevent further mistakes (default: 0.2).
     :param window: The lookback window for backtracking (default: 10).
     :param max_backtracks: The maximum total number of backtracks allowed in a single iteration of the algorithm (default: 20).
-    :param adaptive: Adaptively choose the stepsize by locally approximating the function as a quadratic (default: True).
-    :param accelerate: Increase the stepsize at every step of the algorithm (default: False).
     :param restart: Restart the acceleration of FISTA. Only relevant when accelerating (default: True).
+    :param evaluate_objective: Whether to evaluate the qualify of each iterate by the value of the objective (and also record the objective at every step). Otherwise, the iterate is evaluated by the residual (default: False).
     :return: A guess at an optimizer of h.
     """
 
@@ -98,13 +100,11 @@ def fasta(A, At, f, gradf, g, proxg, x0,
         L = 1 / tau0
 
     # Allocate memory for convergence information
+    iterate_hist = np.zeros(max_iters)
     residual_hist = np.zeros(max_iters)
     norm_residual_hist = np.zeros(max_iters)
     tau_hist = np.zeros(max_iters)
     f_hist = np.zeros(max_iters)
-
-    if evaluate_objective:
-        objective_hist = np.zeros(max_iters)
 
     total_backtracks = 0
 
@@ -116,6 +116,10 @@ def fasta(A, At, f, gradf, g, proxg, x0,
     f1 = f(d1)
     gradf1 = At(gradf(x1))
     f_hist[0] = f1
+
+    if evaluate_objective:
+        objective_hist = np.zeros(max_iters)
+        objective_hist[0] = f1 + g(x1)
 
     # Additional initialization for accelerative descent
     if accelerate:
@@ -129,7 +133,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
 
     # Non-monotonicity for stopping conditions
     max_residual = -np.inf
-    min_objective = np.inf
+    best_quality = np.inf
 
     # Algorithm loop
     i = 1
@@ -157,6 +161,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
             # Track the number of total backtracks
             backtrack_count = 0
 
+            # Check if the quadratic approximation of f1 is an upper bound; if it's not, FBS isn't guaranteed to converge
             while f1 - (M + np.real(np.dot(Dx, gradf0)) + np.norm(Dx)**2 / (2 * tau0)) > EPSILON \
                     and backtrack_count < max_backtracks or not np.isreal(f1):
                 # We've gone too far, so shrink the stepsize and try FBS again
@@ -176,6 +181,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
             total_backtracks += backtrack_count
 
         # Record convergence information
+        iterate_hist[i] = x0
         tau_hist[i] = tau0
         residual_hist[i] = np.norm(Dx) / tau0
 
@@ -186,11 +192,24 @@ def fasta(A, At, f, gradf, g, proxg, x0,
 
         max_residual = np.max(max_residual, residual_hist[i])
 
+        # If the objective is evaluated, we can find the best iterate using the objective
+        if evaluate_objective:
+            objective_hist[i] = f1 + g(x1)
+            quality = objective_hist[i]
+        # Otherwise, we find the best iterate using the smallest residual
+        else:
+            quality = residual_hist[i]
+
+        if quality < best_quality:
+            best_iterate = x1
+            best_quality = quality
+
         if stop_rule(i, residual_hist[i], norm_residual_hist[i], max_residual, tolerance):
             break
 
         # Use FISTA-type acceleration, which overestimates ("predicts") the current iterate in the direction it moved
         # in the previous iteration
+        # TODO: try and simplify this
         if accelerate:
             # Rename last round's current variables to this round's previous variables
             x_accel0 = x_accel1
@@ -226,7 +245,9 @@ def fasta(A, At, f, gradf, g, proxg, x0,
             Dg = gradf1 + (x1hat - x0) / tau0
             dotprod = np.real(np.dot(Dx, Dg))
 
+            # Least squares estimate using a
             tau_s = np.norm(Dx) ** 2 / dotprod
+            # Least squares estimate using t = 1/a
             tau_m = np.max(dotprod / np.norm(Dg) ** 2, 0)
 
             # Use an adaptive combination of tau_s and tau_m
@@ -244,9 +265,15 @@ def fasta(A, At, f, gradf, g, proxg, x0,
     result = {
         'residuals': residual_hist,
         'norm_residuals': norm_residual_hist,
+        'iterates': iterate_hist,
         'stepsizes': tau_hist,
         'backtracks_count': total_backtracks,
         'iteration_count': i,
+        'solution': best_iterate
     }
+
+    if evaluate_objective:
+        result['objectives'] = objective_hist
+        result['solution_object'] = best_quality
 
     return type('FASTAResult', (object,), result)
