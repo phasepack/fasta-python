@@ -31,6 +31,7 @@ EPSILON = 1E-12
 def fasta(A, At, f, gradf, g, proxg, x0,
           adaptive=True,
           accelerate=False,
+          verbose=True,
 
           max_iters=10000,
           tolerance=1E-3,
@@ -50,6 +51,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
 
     :param adaptive: Adaptively choose the stepsize by locally approximating the function as a quadratic (default: True).
     :param accelerate: Increase the stepsize at every step of the algorithm (default: False).
+    :param verbose: Print detailed convergence information as the algorithm progresses (default: False).
     :param A: A matrix, or a function that returns a matrix, which is equal to A*x.
     :param At: The adjoint (conjugate transpose) of A.
     :param f: A convex, differentiable function of x.
@@ -100,6 +102,10 @@ def fasta(A, At, f, gradf, g, proxg, x0,
     else:
         L = 1 / tau0
 
+    if verbose:
+        print("Initializing FASTA...\n")
+        print("Iteration #\tResidual\tTau\tAlpha\tBacktracks")
+
     # Allocate memory for convergence information
     iterate_hist = np.zeros((max_iters, len(x0)))
     residual_hist = np.zeros(max_iters)
@@ -113,9 +119,9 @@ def fasta(A, At, f, gradf, g, proxg, x0,
     x1 = x0
     tau1 = tau0
 
-    z = A(x1)
-    f1 = f(z)
-    gradf1 = At(gradf(z))
+    z1 = A(x1)
+    f1 = f(z1)
+    gradf1 = At(gradf(z1))
     f_hist[0] = f1
 
     if evaluate_objective:
@@ -125,8 +131,8 @@ def fasta(A, At, f, gradf, g, proxg, x0,
     # Additional initialization for accelerative descent
     if accelerate:
         x_accel1 = x1
-        z_accel1 = z
-        alpha1 = 1
+        z_accel1 = z1
+        alpha1 = 1.0
 
     # Additional initialization for backtracking
     if backtrack:
@@ -141,6 +147,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
     while i < max_iters:
         # Rename last iteration's current variables to this round's former variables
         x0 = x1
+        z0 = z1
         gradf0 = gradf1
         tau0 = tau1
 
@@ -150,17 +157,17 @@ def fasta(A, At, f, gradf, g, proxg, x0,
         x1 = proxg(x1hat, tau0)
 
         Dx = x1 - x0
-        z = A(x1)
-        f1 = f(z)
+        z1 = A(x1)
+        f1 = f(z1)
+
+        # Track the number of total backtracks
+        backtrack_count = 0
 
         # Non-monotone backtracking line search, used to guarantee convergence and balance out adaptive search if
         # stepsizes grow too large
         if backtrack:
             # Find the maximum of the last `window` values of f
             M = max(f_hist[max(i - window, 0) : max(i, 1)])
-
-            # Track the number of total backtracks
-            backtrack_count = 0
 
             # Check if the quadratic approximation of f1 is an upper bound; if it's not, FBS isn't guaranteed to converge
             while f1 - (M + np.real(np.dot(Dx.T, gradf0)) + la.norm(Dx)**2 / (2 * tau0)) > EPSILON \
@@ -173,13 +180,62 @@ def fasta(A, At, f, gradf, g, proxg, x0,
                 x1 = proxg(x1hat, tau0)
 
                 # Recalculate values
-                z = A(x1)
-                f1 = f(z)
+                z1 = A(x1)
+                f1 = f(z1)
                 Dx = x1 - x0
 
                 backtrack_count += 1
 
             total_backtracks += backtrack_count
+
+        if accelerate:
+            # Rename last round's current variables to this round's previous variables
+            x_accel0 = x_accel1
+            z_accel0 = z_accel1
+
+            x_accel1 = x1
+            z_accel1 = z1
+
+            alpha0 = alpha1
+
+            # Prevent alpha from growing too large by restarting the acceleration
+            if restart and np.dot((x0 - x1).T, x1 - x_accel0) > EPSILON:
+                alpha0 = 1.0
+
+            # Recalculate acceleration parameter
+            alpha1 = (1 + np.sqrt(1 + 4 * alpha0 ** 2)) / 2
+
+            # Overestimate the next value of x by a factor of (alpha0 - 1) / alpha
+            x1 = x1 + (alpha0 - 1) / alpha1 * (x_accel1 - x_accel0)
+            z1 = z1 + (alpha0 - 1) / alpha1 * (z_accel1 - z_accel0)
+
+            f1 = f(z1)
+
+        # Compute the next iteration's gradient
+        gradf1 = At(gradf(z1))
+        tau1 = tau0
+
+        # Adaptive adjustments of stepsize using the Barzilai-Borwein method (spectral method), which
+        # approximates the function as a quadratic, for which the ideal stepsize is simply 1/a, and dynamically
+        # select a new stepsize for each iteration
+        if adaptive:
+            Dg = gradf1 + (x1hat - x0) / tau0
+            dotprod = np.real(np.dot(Dx.T, Dg))
+
+            # Least squares estimate using a
+            tau_s = la.norm(Dx) ** 2 / dotprod
+            # Least squares estimate using t = 1/a
+            tau_m = np.max(dotprod / la.norm(Dg) ** 2, 0)
+
+            # Use an adaptive combination of tau_s and tau_m
+            if 2 * tau_m > tau_s:
+                tau1 = tau_m
+            else:
+                tau1 = tau_s - .5 * tau_m
+
+            # Ensure non-negative stepsize
+            if tau1 <= 0 or np.isinf(tau1) or np.isnan(tau1):
+                tau1 = tau0 * 1.5
 
         # Record convergence information
         iterate_hist[i,:] = x0[:,0]
@@ -205,61 +261,12 @@ def fasta(A, At, f, gradf, g, proxg, x0,
             best_iterate = x1
             best_quality = quality
 
+        if verbose:
+            print("[{:<6}]\t{:>.6}\t{:>.6}\t{:>.6}\t{:>6}".format(i, residual_hist[i], tau_hist[i],
+                                                                   alpha0 if accelerate else 0.0, backtrack_count if backtrack else 0))
+
         if stop_rule(i, residual_hist[i], norm_residual_hist[i], max_residual, tolerance):
             break
-
-        # Use FISTA-type acceleration, which overestimates ("predicts") the current iterate in the direction it moved
-        # in the previous iteration
-        # TODO: try and simplify this
-        if accelerate:
-            # Rename last round's current variables to this round's previous variables
-            x_accel0 = x_accel1
-            z_accel0 = z_accel1
-
-            x_accel1 = x1
-            z_accel1 = z
-
-            alpha0 = alpha1
-
-            # TODO: figure out if this should be epsilon
-            # Prevent alpha from growing too large by restarting the acceleration
-            if restart and (np.dot((x0 - x1).T, x1 - x_accel0) > EPSILON):
-                alpha0 = 1
-
-            # Recalculate acceleration parameter
-            alpha1 = (1 + np.sqrt(1 + 4*alpha0**2)) / 2
-
-            # Overestimate the next value of x by a factor of (alpha0 - 1) / alpha
-            x1 = x_accel1 + (alpha0 - 1) / alpha1 * (x_accel1 - x_accel0)
-            z = z_accel1 + (alpha0 - 1) / alpha1 * (z_accel1 - z_accel0)
-
-            f_hist[i] = f(z)
-
-        # Compute the next iteration's gradient
-        gradf1 = At(gradf(z))
-        tau1 = tau0
-
-        # Adaptive adjustments of stepsize using the Barzilai-Borwein method (spectral method), which
-        # approximates the function as a quadratic, for which the ideal stepsize is simply 1/a, and dynamically
-        # select a new stepsize for each iteration
-        if adaptive:
-            Dg = gradf1 + (x1hat - x0) / tau0
-            dotprod = np.real(np.dot(Dx.T, Dg))
-
-            # Least squares estimate using a
-            tau_s = la.norm(Dx) ** 2 / dotprod
-            # Least squares estimate using t = 1/a
-            tau_m = np.max(dotprod / la.norm(Dg) ** 2, 0)
-
-            # Use an adaptive combination of tau_s and tau_m
-            if 2 * tau_m > tau_s:
-                tau1 = tau_m
-            else:
-                tau1 = tau_s - .5 * tau_m
-
-            # Ensure non-negative stepsize
-            if tau1 <= 0 or np.isinf(tau1) or np.isnan(tau1):
-                tau1 = tau0 * 1.5
 
         i += 1
 
