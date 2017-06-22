@@ -50,10 +50,10 @@ if __name__ == "__main__":
 
     # Create sparse signal
     x = np.zeros((N,1))
-    x[np.random.permutation(K)] = 1
+    x[np.random.permutation(N)[:K]] = 1
 
     # Regularization parameter
-    mu = 0#s.8 * la.norm(x)
+    mu = 0.8 * la.norm(x, 1)
 
     # Create matrix
     A = np.random.randn(M, N)
@@ -66,19 +66,6 @@ if __name__ == "__main__":
     # Initial iterate
     x0 = np.zeros((N, 1))
 
-    print("Computing raw FBS...")
-    raw_fbs = lasso(A, x, b, mu, x0, backtrack=False, accelerate=False, adaptive=False)
+    print("Constructed lasso problem.")
 
-    print("Computing adaptive FBS...")
-    adaptive = lasso(A, x, b, mu, x0, backtrack=False, accelerate=False, adaptive=True)
-
-    print("Computing FBS with backtracking...")
-    backtrack = lasso(A, x, b, mu, x0, backtrack=True, accelerate=False, adaptive=False)
-
-    print("Computing adaptive FBS with backtacking..")
-    adaptive_backtrack = lasso(A, x, b, mu, x0, backtrack=True, accelerate=False, adaptive=True)
-
-    print("Computing accelerated FBS...")
-    accelerated = lasso(A, x, b, mu, x0, backtrack=True, accelerate=True, adaptive=False)
-
-    harness((raw_fbs, adaptive, backtrack, adaptive_backtrack, accelerated), ('Raw', 'Adaptive', 'Backtrack', 'Adaptive+Backtrack', 'Accelerated'))
+    harness.test_modes(lambda **k: lasso(A, x, b, mu, x0, **k), solution=x)

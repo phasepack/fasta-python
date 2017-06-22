@@ -157,14 +157,14 @@ def fasta(A, At, f, gradf, g, proxg, x0,
         # stepsizes grow too large
         if backtrack:
             # Find the maximum of the last `window` values of f
-            M = np.max(f_hist[-min(i, window)])
+            M = max(f_hist[max(i - window, 0) : max(i, 1)])
 
             # Track the number of total backtracks
             backtrack_count = 0
 
             # Check if the quadratic approximation of f1 is an upper bound; if it's not, FBS isn't guaranteed to converge
             while f1 - (M + np.real(np.dot(Dx.T, gradf0)) + la.norm(Dx)**2 / (2 * tau0)) > EPSILON \
-                    and backtrack_count < max_backtracks or not np.isreal(f1):
+                    and backtrack_count < max_backtracks:
                 # We've gone too far, so shrink the stepsize and try FBS again
                 tau0 *= stepsize_shrink
 
@@ -223,7 +223,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
 
             # TODO: figure out if this should be epsilon
             # Prevent alpha from growing too large by restarting the acceleration
-            if restart and np.dot((x1 - x0).T, x1 - x_accel0) > EPSILON:
+            if restart and (np.dot((x0 - x1).T, x1 - x_accel0) > EPSILON):
                 alpha0 = 1
 
             # Recalculate acceleration parameter
