@@ -26,7 +26,7 @@ def test_modes(solver, solution=None):
     plt.ylabel("log(residual)")
     plt.title("Convergence")
 
-    if solution:
+    if solution is not None:
         plt.figure(2)
         plt.plot(solution)
         for result in [raw, adaptive, accelerated]:
