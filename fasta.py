@@ -31,10 +31,10 @@ EPSILON = 1E-12
 def fasta(A, At, f, gradf, g, proxg, x0,
           adaptive=True,
           accelerate=False,
-          verbose=True,
+          verbose=False,
 
-          max_iters=10000,
-          tolerance=1E-3,
+          max_iters=1000,
+          tolerance=0,
 
           stop_rule=hybrid_residual,
           L=None,
@@ -156,6 +156,9 @@ def fasta(A, At, f, gradf, g, proxg, x0,
         # Now take the backwards step by finding a minimizer of g close to x
         x1 = proxg(x1hat, tau0)
 
+        if la.norm(x1, 1) > 8:
+            print("ALERT", la.norm(x1, 1), tau0)
+
         Dx = x1 - x0
         z1 = A(x1)
         f1 = f(z1)
@@ -169,7 +172,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
             # Find the maximum of the last `window` values of f
             M = max(f_hist[max(i - window, 0) : max(i, 1)])
 
-            # Check if the quadratic approximation of f1 is an upper bound; if it's not, FBS isn't guaranteed to converge
+            # Check if the quadratic approximation of f is an upper bound; if it's not, FBS isn't guaranteed to converge
             while f1 - (M + np.real(np.dot(Dx.T, gradf0)) + la.norm(Dx)**2 / (2 * tau0)) > EPSILON \
                     and backtrack_count < max_backtracks:
                 # We've gone too far, so shrink the stepsize and try FBS again
@@ -203,10 +206,11 @@ def fasta(A, At, f, gradf, g, proxg, x0,
                 alpha0 = 1.0
 
             # Recalculate acceleration parameter
-            alpha1 = (1 + np.sqrt(1 + 4 * alpha0 ** 2)) / 2
+            alpha1 = (1. + np.sqrt(1. + 4. * alpha0 ** 2.)) / 2.
 
             # Overestimate the next value of x by a factor of (alpha0 - 1) / alpha
-            x1 = x1 + (alpha0 - 1) / alpha1 * (x_accel1 - x_accel0)
+            # NOTE: this makes a copy of x1, which is necessary since x1's reference is linked to x0
+            x1 = x1 + (alpha0 - 1.) / alpha1 * (x_accel1 - x_accel0)
             z1 = z1 + (alpha0 - 1) / alpha1 * (z_accel1 - z_accel0)
 
             f1 = f(z1)
@@ -225,7 +229,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
             # Least squares estimate using a
             tau_s = la.norm(Dx) ** 2 / dotprod
             # Least squares estimate using t = 1/a
-            tau_m = np.max(dotprod / la.norm(Dg) ** 2, 0)
+            tau_m = max(dotprod / la.norm(Dg) ** 2, 0)
 
             # Use an adaptive combination of tau_s and tau_m
             if 2 * tau_m > tau_s:
@@ -282,6 +286,6 @@ def fasta(A, At, f, gradf, g, proxg, x0,
 
     if evaluate_objective:
         result['objectives'] = objective_hist
-        result['solution_object'] = best_quality
+        result['solution_objective'] = best_quality
 
     return type('FASTAResult', (object,), result)

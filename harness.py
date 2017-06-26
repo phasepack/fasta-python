@@ -9,22 +9,42 @@ from matplotlib import pyplot as plt
 
 def test_modes(solver, solution=None):
     print("Computing raw FBS...")
-    raw = solver(accelerate=False, adaptive=False)
+    raw = solver(accelerate=False, adaptive=False, evaluate_objective=True)
 
     print("Computing adaptive FBS...")
-    adaptive = solver(accelerate=False, adaptive=True)
+    adaptive = solver(accelerate=False, adaptive=True, evaluate_objective=True)
 
     print("Computing accelerated FBS...")
-    accelerated = solver(accelerate=True, adaptive=False)
+    accelerated = solver(accelerate=True, adaptive=False, evaluate_objective=True)
 
     plt.figure(1)
+
+    plt.subplot(221)
     for result in [raw, adaptive, accelerated]:
         plt.plot(np.log(result.residuals[:result.iteration_count]))
 
     plt.legend(("Raw", "Adaptive", "Accelerated"))
     plt.xlabel("Iteration #")
     plt.ylabel("log(residual)")
-    plt.title("Convergence")
+    plt.title("Residuals")
+
+    plt.subplot(222)
+    for result in [raw, adaptive, accelerated]:
+        plt.plot(np.log(result.norm_residuals[:result.iteration_count]))
+
+    plt.legend(("Raw", "Adaptive", "Accelerated"))
+    plt.xlabel("Iteration #")
+    plt.ylabel("log(norm residual)")
+    plt.title("Normalized Residuals")
+
+    plt.subplot(223)
+    for result in [raw, adaptive, accelerated]:
+        plt.plot(np.log(result.objectives[:result.iteration_count]))
+
+    plt.legend(("Raw", "Adaptive", "Accelerated"))
+    plt.xlabel("Iteration #")
+    plt.ylabel("log(objective)")
+    plt.title("Objective Function")
 
     if solution is not None:
         plt.figure(2)
@@ -38,3 +58,5 @@ def test_modes(solver, solution=None):
         plt.title("Recovered Signals")
 
     plt.show()
+
+    return raw, adaptive, accelerated

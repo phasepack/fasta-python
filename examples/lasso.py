@@ -1,4 +1,4 @@
-"""Solve the L1-penalized least-squares (lasso) problem,
+"""Solve the L1-penalized least-squares problem,
 
 min .5||Ax-b||^2, |x| < mu
 
@@ -14,13 +14,13 @@ from fasta import fasta, harness
 
 
 def prox_infinity_norm(w, t):
-    N = len(w)
     wabs = np.abs(w)
+    wabs[::-1].sort()
 
-    alpha = max((np.cumsum(sorted(wabs, reverse=True)) - t) / np.arange(1, N+1))
+    alpha = np.max((np.cumsum(wabs) - t) / np.arange(1, len(w) + 1))
 
     if alpha > 0:
-        return min(min(wabs), alpha) * np.sign(w)
+        return np.minimum(wabs, alpha) * np.sign(w)
     else:
         return np.zeros(w.shape)
 
@@ -28,7 +28,7 @@ def prox_infinity_norm(w, t):
 def lasso(A, x, b, mu, x0, **kwargs):
     f = lambda z: .5 * la.norm(z - b)**2
     gradf = lambda z: z - b
-    g = lambda x: 0 if la.norm(g) < mu else np.inf
+    g = lambda x: 0 if la.norm(x, 1) < mu else np.inf
 
     # By Moreau's identity, we convert to proximal of conjugate problem (L-inf norm)
     proxg = lambda z, t: z - prox_infinity_norm(z, t)
@@ -36,6 +36,8 @@ def lasso(A, x, b, mu, x0, **kwargs):
     return fasta(A, A.T, f, gradf, g, proxg, x0, **kwargs)
 
 if __name__ == "__main__":
+    # np.random.seed(13409823)
+
     # Number of measurements
     M = 200
 
@@ -57,7 +59,7 @@ if __name__ == "__main__":
 
     # Create matrix
     A = np.random.randn(M, N)
-    A /= la.norm(A)
+    A /= la.norm(A, 1)
 
     # Create noisy observation vector
     b = A@x
@@ -68,4 +70,7 @@ if __name__ == "__main__":
 
     print("Constructed lasso problem.")
 
-    harness.test_modes(lambda **k: lasso(A, x, b, mu, x0, **k), solution=x)
+    raw, adaptive, accelerated = harness.test_modes(lambda **k: lasso(A, x, b, mu, x0, **k), solution=x)
+
+    print(la.norm(x, 1))
+    print(la.norm(raw.solution, 1))
