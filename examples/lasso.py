@@ -15,9 +15,9 @@ from fasta import fasta, harness
 
 def prox_infinity_norm(w, t):
     wabs = np.abs(w)
-    wabs[::-1].sort()
+    flipped = np.flip(np.sort(wabs, axis=0), axis=0)
 
-    alpha = np.max((np.cumsum(wabs) - t) / np.arange(1, len(w) + 1))
+    alpha = np.max((np.cumsum(flipped) - t) / np.arange(1, len(w) + 1))
 
     if alpha > 0:
         return np.minimum(wabs, alpha) * np.sign(w)
@@ -25,13 +25,13 @@ def prox_infinity_norm(w, t):
         return np.zeros(w.shape)
 
 
-def lasso(A, x, b, mu, x0, **kwargs):
+def lasso(A, b, mu, x0, **kwargs):
     f = lambda z: .5 * la.norm(z - b)**2
     gradf = lambda z: z - b
-    g = lambda x: 0 if la.norm(x, 1) < mu else np.inf
+    g = lambda z: 0
 
     # By Moreau's identity, we convert to proximal of conjugate problem (L-inf norm)
-    proxg = lambda z, t: z - prox_infinity_norm(z, t)
+    proxg = lambda z, t: z - prox_infinity_norm(z, mu)
 
     return fasta(A, A.T, f, gradf, g, proxg, x0, **kwargs)
 
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     A /= la.norm(A, 1)
 
     # Create noisy observation vector
-    b = A@x
+    b = A @ x
     b += sigma * np.random.standard_normal(b.shape)
 
     # Initial iterate
@@ -70,7 +70,4 @@ if __name__ == "__main__":
 
     print("Constructed lasso problem.")
 
-    raw, adaptive, accelerated = harness.test_modes(lambda **k: lasso(A, x, b, mu, x0, **k), solution=x)
-
-    print(la.norm(x, 1))
-    print(la.norm(raw.solution, 1))
+    raw, adaptive, accelerated = harness.test_modes(lambda **k: lasso(A, b, mu, x0, **k), solution=x)

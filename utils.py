@@ -17,7 +17,7 @@ def functionize(A):
         return A
     else:
         # A is not a function, so create a function wrapping it
-        return lambda x: A@x
+        return lambda x: A @ x
 
 #
 # def check_adjoint(A, At, x):

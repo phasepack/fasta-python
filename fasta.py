@@ -34,7 +34,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
           verbose=False,
 
           max_iters=1000,
-          tolerance=0,
+          tolerance=1E-3,
 
           stop_rule=hybrid_residual,
           L=None,
@@ -83,16 +83,16 @@ def fasta(A, At, f, gradf, g, proxg, x0,
 
     # Check if we need to approximate the Lipschitz constant of f
     if not L or not tau0:
-        # Compute len(x0) pairs of points
-        x1 = np.random.randn(len(x0))
-        x2 = np.random.randn(len(x0))
+        # Compute two random vectors
+        x1 = np.random.standard_normal(x0.shape)
+        x2 = np.random.standard_normal(x0.shape)
 
-        # Compute the gradients at each pair of points
+        # Compute the gradients between the vectors
         gradf1 = At(gradf(A(x1)))
         gradf2 = At(gradf(A(x2)))
 
         # Approximate the Lipschitz constant of f
-        L = np.max(la.norm(gradf1 - gradf2) / la.norm(x1 - x2))
+        L = la.norm(gradf1 - gradf2) / la.norm(x1 - x2)
 
         # We're guaranteed that FBS converges for tau <= 2.0 / L
         tau0 = (2 / L) / 10
@@ -101,6 +101,8 @@ def fasta(A, At, f, gradf, g, proxg, x0,
         tau0 = 1 / L
     else:
         L = 1 / tau0
+
+    tau0 = 15
 
     if verbose:
         print("Initializing FASTA...\n")
@@ -156,10 +158,8 @@ def fasta(A, At, f, gradf, g, proxg, x0,
         # Now take the backwards step by finding a minimizer of g close to x
         x1 = proxg(x1hat, tau0)
 
-        if la.norm(x1, 1) > 8:
-            print("ALERT", la.norm(x1, 1), tau0)
-
         Dx = x1 - x0
+
         z1 = A(x1)
         f1 = f(z1)
 
@@ -173,7 +173,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
             M = max(f_hist[max(i - window, 0) : max(i, 1)])
 
             # Check if the quadratic approximation of f is an upper bound; if it's not, FBS isn't guaranteed to converge
-            while f1 - (M + np.real(np.dot(Dx.T, gradf0)) + la.norm(Dx)**2 / (2 * tau0)) > EPSILON \
+            while f1 - (M + np.real(Dx.T @ gradf0) + la.norm(Dx)**2 / (2 * tau0)) > EPSILON \
                     and backtrack_count < max_backtracks:
                 # We've gone too far, so shrink the stepsize and try FBS again
                 tau0 *= stepsize_shrink
@@ -202,7 +202,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
             alpha0 = alpha1
 
             # Prevent alpha from growing too large by restarting the acceleration
-            if restart and np.dot((x0 - x1).T, x1 - x_accel0) > EPSILON:
+            if restart and (x0 - x1).T @ (x1 - x_accel0) > EPSILON:
                 alpha0 = 1.0
 
             # Recalculate acceleration parameter
@@ -224,7 +224,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
         # select a new stepsize for each iteration
         if adaptive:
             Dg = gradf1 + (x1hat - x0) / tau0
-            dotprod = np.real(np.dot(Dx.T, Dg))
+            dotprod = np.real(Dx.T @ Dg)
 
             # Least squares estimate using a
             tau_s = la.norm(Dx) ** 2 / dotprod
@@ -241,12 +241,13 @@ def fasta(A, At, f, gradf, g, proxg, x0,
             if tau1 <= 0 or np.isinf(tau1) or np.isnan(tau1):
                 tau1 = tau0 * 1.5
 
-        # Record convergence information
-        iterate_hist[i,:] = x0[:,0]
-        tau_hist[i] = tau0
         residual_hist[i] = la.norm(Dx) / tau0
 
         normalizer = max(la.norm(gradf0), la.norm(x1 - x1hat) / tau0) + EPSILON
+
+        # Record convergence information
+        iterate_hist[i, :] = x0[:, 0]
+        tau_hist[i] = tau0
         norm_residual_hist[i] = residual_hist[i] / normalizer
 
         f_hist[i] = f1

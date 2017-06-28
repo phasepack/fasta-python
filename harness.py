@@ -10,12 +10,19 @@ from matplotlib import pyplot as plt
 def test_modes(solver, solution=None):
     print("Computing raw FBS...")
     raw = solver(accelerate=False, adaptive=False, evaluate_objective=True)
+    print("Completed in {} iterations.".format(raw.iteration_count))
+
+    print()
 
     print("Computing adaptive FBS...")
     adaptive = solver(accelerate=False, adaptive=True, evaluate_objective=True)
+    print("Completed in {} iterations.".format(adaptive.iteration_count))
+
+    print()
 
     print("Computing accelerated FBS...")
     accelerated = solver(accelerate=True, adaptive=False, evaluate_objective=True)
+    print("Completed in {} iterations.".format(accelerated.iteration_count))
 
     plt.figure(1)
 
@@ -45,17 +52,6 @@ def test_modes(solver, solution=None):
     plt.xlabel("Iteration #")
     plt.ylabel("log(objective)")
     plt.title("Objective Function")
-
-    if solution is not None:
-        plt.figure(2)
-        plt.plot(solution)
-        for result in [raw, adaptive, accelerated]:
-            plt.plot(result.solution)
-
-        plt.legend(("Original", "Raw", "Adaptive", "Accelerated"))
-        plt.xlabel("Dimension")
-        plt.ylabel("Value")
-        plt.title("Recovered Signals")
 
     plt.show()
 

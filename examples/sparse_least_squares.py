@@ -11,11 +11,11 @@ from numpy import linalg as la
 from fasta import fasta, harness, utils
 
 
-def sparse_least_squares(A, x, b, mu, x0, **kwargs):
-    f = lambda z: .5 * la.norm(z - b)**2
+def sparse_least_squares(A, b, mu, x0, **kwargs):
+    f = lambda z: .5 * la.norm(z - b) ** 2
     gradf = lambda z: z - b
-    g = lambda x: mu * la.norm(x, 1)
-    proxg = lambda x, t: utils.shrink(x, t*mu)
+    g = lambda z: mu * la.norm(z, 1)
+    proxg = lambda z, t: utils.shrink(z, t*mu)
 
     return fasta(A, A.T, f, gradf, g, proxg, x0, **kwargs)
 
@@ -41,10 +41,10 @@ if __name__ == "__main__":
 
     # Create matrix
     A = np.random.randn(M, N)
-    A /= la.norm(A)
+    A /= la.norm(A, 1)
 
     # Create noisy observation vector
-    b = A@x
+    b = A @ x
     b += sigma * np.random.standard_normal(b.shape)
 
     # Initial iterate
@@ -52,4 +52,4 @@ if __name__ == "__main__":
 
     print("Constructed sparse least-squares problem.")
 
-    harness.test_modes(lambda **k: sparse_least_squares(A, x, b, mu, x0, **k), solution=x)
+    harness.test_modes(lambda **k: sparse_least_squares(A, b, mu, x0, **k), solution=x)
