@@ -10,7 +10,7 @@ __author__ = "Noah Singer"
 
 import numpy as np
 from numpy import linalg as la
-from fasta import fasta, harness, proximal
+from fasta import fasta, harness, proximal, plots
 
 
 
@@ -23,8 +23,6 @@ def lasso(A, b, mu, x0, **kwargs):
     return fasta(A, A.T, f, gradf, g, proxg, x0, **kwargs)
 
 if __name__ == "__main__":
-    # np.random.seed(13409823)
-
     # Number of measurements
     M = 200
 
@@ -56,4 +54,6 @@ if __name__ == "__main__":
 
     print("Constructed lasso problem.")
 
-    raw, adaptive, accelerated = harness.test_modes(lambda **k: lasso(A, b, mu, x0, **k), solution=x)
+    raw, adaptive, accelerated = harness.test_modes(lambda **k: lasso(A, b, mu, x0, **k))
+    plots.plot_signals(x, adaptive.solution)
+    plots.show_plots()
