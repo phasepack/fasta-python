@@ -9,8 +9,8 @@ from fasta import plots
 def test_modes(solver):
     """Test the plain"""
     print("Computing plain FBS...")
-    raw = solver(accelerate=False, adaptive=False, evaluate_objective=True)
-    print("Completed in {} iterations.".format(raw.iteration_count))
+    plain = solver(accelerate=False, adaptive=False, evaluate_objective=True)
+    print("Completed in {} iterations.".format(plain.iteration_count))
 
     print()
 
@@ -24,6 +24,6 @@ def test_modes(solver):
     accelerated = solver(accelerate=True, adaptive=False, evaluate_objective=True)
     print("Completed in {} iterations.".format(accelerated.iteration_count))
 
-    plots.plot_convergence((raw, adaptive, accelerated), ("Plain", "Adaptive", "Accelerated"))
+    plots.plot_convergence((plain, adaptive, accelerated), ("Plain", "Adaptive", "Accelerated"))
 
-    return raw, adaptive, accelerated
+    return plain, adaptive, accelerated

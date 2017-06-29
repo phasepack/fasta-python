@@ -1,4 +1,4 @@
-"""Solve the L1-penalized least-squares problem,
+"""Solve the L1-restricted least-squares problem,
 
 min .5||Ax-b||^2, |x| < mu
 
@@ -13,12 +13,20 @@ from numpy import linalg as la
 from fasta import fasta, tests, proximal, plots
 
 
-
 def lasso(A, b, mu, x0, **kwargs):
+    """Solve the L1-restricted least-squares problem.
+
+    :param A: A matrix or function handle.
+    :param b: A measurement vector.
+    :param mu: A parameter controlling the regularization.
+    :param x0: An initial guess for the solution.
+    :param kwargs: Options for the FASTA solver.
+    :return: The output of the FASTA solver on the problem.
+    """
     f = lambda z: .5 * la.norm(z - b)**2
     gradf = lambda z: z - b
-    g = lambda z: 0
-    proxg = lambda z, t: proximal.project_L1_ball(z, mu)
+    g = lambda x: 0
+    proxg = lambda x, t: proximal.project_L1_ball(x, mu)
 
     return fasta(A, A.T, f, gradf, g, proxg, x0, **kwargs)
 
@@ -26,7 +34,7 @@ if __name__ == "__main__":
     # Number of measurements
     M = 200
 
-    # Dimension of spare signal
+    # Dimension of sparse signal
     N = 1000
 
     # Signal sparsity
@@ -55,7 +63,7 @@ if __name__ == "__main__":
     print("Constructed lasso problem.")
 
     # Test the three different algorithms
-    raw, adaptive, accelerated = tests.test_modes(lambda **k: lasso(A, b, mu, x0, **k))
+    plain, adaptive, accelerated = tests.test_modes(lambda **k: lasso(A, b, mu, x0, **k))
 
     # Plot the recovered signal
     plots.plot_signals(x, adaptive.solution)

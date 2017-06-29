@@ -33,9 +33,9 @@ def plot_convergence(solvers, labels):
 
 
 def plot_signals(original, recovered):
-    """Plot the original and recovered signals."""
+    """Plot original and recovered signal vectors."""
 
-    figure, axes = plt.subplots(1, 1)
+    figure, axes = plt.subplots()
 
     axes.set_xlabel("Dimension")
     axes.set_ylabel("Value")
@@ -45,6 +45,20 @@ def plot_signals(original, recovered):
     axes.plot(recovered, label="Recovered")
 
     axes.legend()
+
+
+def plot_matrices(original, recovered):
+    """Plot original and recovered signal matrices."""
+
+    min_entry = min(np.min(original), np.min(recovered))
+    max_entry = max(np.max(original), np.max(recovered))
+
+    figure, (original_axes, recovered_axes) = plt.subplots(1, 2)
+
+    original_axes.matshow(original, vmin=min_entry, vmax=max_entry)
+    im = recovered_axes.matshow(recovered, vmin=min_entry, vmax=max_entry)
+
+    figure.colorbar(im, ax=(original_axes, recovered_axes))
 
 
 def show_plots():

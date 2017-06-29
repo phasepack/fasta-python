@@ -40,14 +40,14 @@ def fasta(A, At, f, gradf, g, proxg, x0,
           L=None,
           tau0=None,
 
-          backtrack=True,
+          backtrack=False,
           stepsize_shrink=0.2,
           window=10,
           max_backtracks=20,
 
           restart=True,
           evaluate_objective=False):
-    """
+    """Run the FASTA algorithm.
 
     :param adaptive: Adaptively choose the stepsize by locally approximating the function as a quadratic (default: True).
     :param accelerate: Increase the stepsize at every step of the algorithm (default: False).
@@ -168,10 +168,10 @@ def fasta(A, At, f, gradf, g, proxg, x0,
         # stepsizes grow too large
         if backtrack:
             # Find the maximum of the last `window` values of f
-            M = max(f_hist[max(i - window, 0) : max(i, 1)])
+            M = np.max(f_hist[max(i - window, 0) : max(i, 1)])
 
             # Check if the quadratic approximation of f is an upper bound; if it's not, FBS isn't guaranteed to converge
-            while f1 - (M + np.real(Dx.T @ gradf0) + la.norm(Dx)**2 / (2 * tau0)) > EPSILON \
+            while f1 - (M + np.real(Dx.flatten().T @ gradf0.flatten()) + la.norm(Dx)**2 / (2 * tau0)) > EPSILON \
                     and backtrack_count < max_backtracks:
                 # We've gone too far, so shrink the stepsize and try FBS again
                 tau0 *= stepsize_shrink
@@ -200,7 +200,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
             alpha0 = alpha1
 
             # Prevent alpha from growing too large by restarting the acceleration
-            if restart and (x0 - x1).T @ (x1 - x_accel0) > EPSILON:
+            if restart and (x0 - x1).flatten().T @ (x1 - x_accel0).flatten() > EPSILON:
                 alpha0 = 1.0
 
             # Recalculate acceleration parameter
@@ -222,7 +222,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
         # select a new stepsize for each iteration
         if adaptive:
             Dg = gradf1 + (x1hat - x0) / tau0
-            dotprod = np.real(Dx.T @ Dg)
+            dotprod = np.real(Dx.flatten().T @ Dg.flatten())
 
             # Least squares estimate using a
             tau_s = la.norm(Dx) ** 2 / dotprod
