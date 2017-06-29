@@ -84,8 +84,8 @@ def fasta(A, At, f, gradf, g, proxg, x0,
     # Check if we need to approximate the Lipschitz constant of f
     if not L or not tau0:
         # Compute two random vectors
-        x1 = np.random.standard_normal(x0.shape)
-        x2 = np.random.standard_normal(x0.shape)
+        x1 = np.random.randn(*x0.shape)
+        x2 = np.random.randn(*x0.shape)
 
         # Compute the gradients between the vectors
         gradf1 = At(gradf(A(x1)))
@@ -102,14 +102,12 @@ def fasta(A, At, f, gradf, g, proxg, x0,
     else:
         L = 1 / tau0
 
-    tau0 = 15
-
     if verbose:
         print("Initializing FASTA...\n")
         print("Iteration #\tResidual\tTau\tAlpha\tBacktracks")
 
     # Allocate memory for convergence information
-    iterate_hist = np.zeros((max_iters, len(x0)))
+    iterate_hist = np.zeros((max_iters,) + x0.shape)
     residual_hist = np.zeros(max_iters)
     norm_residual_hist = np.zeros(max_iters)
     tau_hist = np.zeros(max_iters)
@@ -246,7 +244,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
         normalizer = max(la.norm(gradf0), la.norm(x1 - x1hat) / tau0) + EPSILON
 
         # Record convergence information
-        iterate_hist[i, :] = x0[:, 0]
+        iterate_hist[i, :] = x0
         tau_hist[i] = tau0
         norm_residual_hist[i] = residual_hist[i] / normalizer
 

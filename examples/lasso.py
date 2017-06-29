@@ -10,28 +10,15 @@ __author__ = "Noah Singer"
 
 import numpy as np
 from numpy import linalg as la
-from fasta import fasta, harness
+from fasta import fasta, harness, proximal
 
-
-def prox_infinity_norm(w, t):
-    wabs = np.abs(w)
-    flipped = np.flip(np.sort(wabs, axis=0), axis=0)
-
-    alpha = np.max((np.cumsum(flipped) - t) / np.arange(1, len(w) + 1))
-
-    if alpha > 0:
-        return np.minimum(wabs, alpha) * np.sign(w)
-    else:
-        return np.zeros(w.shape)
 
 
 def lasso(A, b, mu, x0, **kwargs):
     f = lambda z: .5 * la.norm(z - b)**2
     gradf = lambda z: z - b
     g = lambda z: 0
-
-    # By Moreau's identity, we convert to proximal of conjugate problem (L-inf norm)
-    proxg = lambda z, t: z - prox_infinity_norm(z, mu)
+    proxg = lambda z, t: proximal.project_L1_ball(z, mu)
 
     return fasta(A, A.T, f, gradf, g, proxg, x0, **kwargs)
 
@@ -51,7 +38,7 @@ if __name__ == "__main__":
     sigma = 0.01
 
     # Create sparse signal
-    x = np.zeros((N,1))
+    x = np.zeros(N)
     x[np.random.permutation(N)[:K]] = 1
 
     # Regularization parameter
@@ -59,14 +46,13 @@ if __name__ == "__main__":
 
     # Create matrix
     A = np.random.randn(M, N)
-    A /= la.norm(A, 1)
+    A /= la.norm(A, 2)
 
     # Create noisy observation vector
-    b = A @ x
-    b += sigma * np.random.standard_normal(b.shape)
+    b = A @ x + sigma * np.random.randn(M)
 
     # Initial iterate
-    x0 = np.zeros((N, 1))
+    x0 = np.zeros(N)
 
     print("Constructed lasso problem.")
 

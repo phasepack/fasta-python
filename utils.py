@@ -26,9 +26,3 @@ def functionize(A):
 #
 #     y = np.random.randn(len(Ax))
 #     Aty = At(y)
-
-
-def shrink(x, tau):
-    """The vector shrink operator."""
-
-    return np.sign(x) * np.maximum(np.abs(x) - tau, 0)
