@@ -8,7 +8,7 @@ __author__ = "Noah Singer"
 
 import numpy as np
 from numpy import linalg as la
-from fasta import fasta, harness, proximal, plots
+from fasta import fasta, test, proximal, plots
 
 
 def sparse_least_squares(A, b, mu, x0, **kwargs):
@@ -51,6 +51,9 @@ if __name__ == "__main__":
 
     print("Constructed sparse least-squares problem.")
 
-    raw, adaptive, accelerated = harness.test_modes(lambda **k: sparse_least_squares(A, b, mu, x0, **k))
+    # Test the three different algorithms
+    raw, adaptive, accelerated = tests.test_modes(lambda **k: sparse_least_squares(A, b, mu, x0, **k))
+
+    # Plot the recovered signal
     plots.plot_signals(x, adaptive.solution)
     plots.show_plots()

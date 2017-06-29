@@ -19,6 +19,8 @@ def plot_convergence(solvers, labels):
     for solver, label in zip(solvers, labels):
         residuals.plot(np.log(solver.norm_residuals[:solver.iteration_count]), label=label)
 
+    residuals.legend()
+
     # Plot the values of the objective function
     objective.set_xlabel("Iteration #")
     objective.set_ylabel("log(objective)")
@@ -26,6 +28,8 @@ def plot_convergence(solvers, labels):
 
     for solver, label in zip(solvers, labels):
         objective.plot(np.log(solver.objectives[:solver.iteration_count]), label=label)
+
+    objective.legend()
 
 
 def plot_signals(original, recovered):
@@ -39,6 +43,8 @@ def plot_signals(original, recovered):
 
     axes.plot(original, label="Original")
     axes.plot(recovered, label="Recovered")
+
+    axes.legend()
 
 
 def show_plots():
