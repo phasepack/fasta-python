@@ -11,7 +11,7 @@ operator of `g` with stepsize `t`, equal to argmin { t*g(x) + .5 ||x-z||**2 }, w
 minimum value of `g` while not straying too far from `z`.
 
 The FASTA algorithm incorporates various improvements to FBS, as detailed in (Goldstein et al. 2016), including
-adaptive stepsize selection, acceleration, preconditioning, non-monotone backtracking line search, continuation,
+adaptive stepsize selection, acceleration, non-monotone backtracking line search,
 and a variety of stopping conditions.
 """
 
@@ -34,7 +34,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
           verbose=False,
 
           max_iters=1000,
-          tolerance=1E-3,
+          tolerance=0,
 
           stop_rule=hybrid_residual,
           L=None,
@@ -132,7 +132,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
     if accelerate:
         x_accel1 = x1
         z_accel1 = z1
-        alpha1 = 1.0
+        alpha1 = 1
 
     # Additional initialization for backtracking
     if backtrack:
@@ -171,7 +171,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
             M = np.max(f_hist[max(i - window, 0) : max(i, 1)])
 
             # Check if the quadratic approximation of f is an upper bound; if it's not, FBS isn't guaranteed to converge
-            while f1 - (M + np.real(Dx.flatten().T @ gradf0.flatten()) + la.norm(Dx)**2 / (2 * tau0)) > EPSILON \
+            while f1 - (M + np.real(Dx.flatten().T @ gradf0.flatten()) + la.norm(Dx)**2 / (2 * tau0)) > 0 \
                     and backtrack_count < max_backtracks:
                 # We've gone too far, so shrink the stepsize and try FBS again
                 tau0 *= stepsize_shrink
@@ -200,15 +200,15 @@ def fasta(A, At, f, gradf, g, proxg, x0,
             alpha0 = alpha1
 
             # Prevent alpha from growing too large by restarting the acceleration
-            if restart and (x0 - x1).flatten().T @ (x1 - x_accel0).flatten() > EPSILON:
-                alpha0 = 1.0
+            if restart and (x0 - x1).flatten().T @ (x1 - x_accel0).flatten() > 0:
+                alpha0 = 1
 
             # Recalculate acceleration parameter
-            alpha1 = (1. + np.sqrt(1. + 4. * alpha0 ** 2.)) / 2.
+            alpha1 = (1 + np.sqrt(1 + 4 * alpha0**2)) / 2
 
             # Overestimate the next value of x by a factor of (alpha0 - 1) / alpha
             # NOTE: this makes a copy of x1, which is necessary since x1's reference is linked to x0
-            x1 = x1 + (alpha0 - 1.) / alpha1 * (x_accel1 - x_accel0)
+            x1 = x1 + (alpha0 - 1) / alpha1 * (x_accel1 - x_accel0)
             z1 = z1 + (alpha0 - 1) / alpha1 * (z_accel1 - z_accel0)
 
             f1 = f(z1)
