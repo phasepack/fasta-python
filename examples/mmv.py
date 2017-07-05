@@ -17,10 +17,11 @@ from numpy import linalg as la
 from fasta import fasta, tests, proximal, plots
 
 
-def mmv(A, B, mu, X0, **kwargs):
+def mmv(A, At, B, mu, X0, **kwargs):
     """Solve the multiple measurement vector (MMV) problem.
 
     :param A: A matrix or function handle.
+    :param At: The transpose of A.
     :param B: A matrix of measurements.
     :param mu: A parameter controlling the regularization.
     :param X0: An initial guess for the solution.
@@ -42,7 +43,7 @@ def mmv(A, B, mu, X0, **kwargs):
 
         return X * scale
 
-    return fasta(A, A.T, f, gradf, g, proxg, X0, **kwargs)
+    return fasta(A, At, f, gradf, g, proxg, X0, **kwargs)
 
 if __name__ == "__main__":
     # Number of measurements
@@ -77,7 +78,7 @@ if __name__ == "__main__":
     print("Constructed MMV problem.")
 
     # Test the three different algorithms
-    raw, adaptive, accelerated = tests.test_modes(lambda **k: mmv(A, B, mu, X0, **k))
+    raw, adaptive, accelerated = tests.test_modes(lambda **k: mmv(A, A.t, B, mu, X0, **k))
 
     # Plot the recovered signal
     plots.plot_matrices(X, adaptive.solution)

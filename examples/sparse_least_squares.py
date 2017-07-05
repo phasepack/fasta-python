@@ -11,10 +11,11 @@ from numpy import linalg as la
 from fasta import fasta, test, proximal, plots
 
 
-def sparse_least_squares(A, b, mu, x0, **kwargs):
+def sparse_least_squares(A, At, b, mu, x0, **kwargs):
     """Solve the L1-penalized least squared problem.
 
     :param A: A matrix or function handle.
+    :param At: The transpose of A.
     :param b: A measurement vector.
     :param mu: A parameter controlling the regularization.
     :param x0: An initial guess for the solution.
@@ -61,7 +62,7 @@ if __name__ == "__main__":
     print("Constructed sparse least-squares problem.")
 
     # Test the three different algorithms
-    plain, adaptive, accelerated = tests.test_modes(lambda **k: sparse_least_squares(A, b, mu, x0, **k))
+    plain, adaptive, accelerated = tests.test_modes(lambda **k: sparse_least_squares(A, A.T, b, mu, x0, **k))
 
     # Plot the recovered signal
     plots.plot_signals(x, adaptive.solution)
