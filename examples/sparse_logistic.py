@@ -11,8 +11,8 @@ from numpy import linalg as la
 from fasta import fasta, tests, proximal, plots
 
 
-def sparse_least_squares(A, At, b, mu, x0, **kwargs):
-    """Solve the L1-penalized least squares problem.
+def sparse_logistic(A, At, b, mu, x0, **kwargs):
+    """Solve the L1-penalized logistic least squares problem.
 
     :param A: A matrix or function handle.
     :param At: The transpose of A.
@@ -22,8 +22,8 @@ def sparse_least_squares(A, At, b, mu, x0, **kwargs):
     :param kwargs: Options for the FASTA solver.
     :return: The output of the FASTA solver on the problem.
     """
-    f = lambda z: .5 * la.norm(z - b) ** 2
-    gradf = lambda z: z - b
+    f = lambda z: np.sum(np.log(1 + np.exp(z)) - (b==1) * z)
+    gradf = lambda z: -b / (1 + np.exp(b * z))
     g = lambda x: mu * la.norm(x, 1)
     proxg = lambda x, t: proximal.shrink(x, t*mu)
 
@@ -31,19 +31,16 @@ def sparse_least_squares(A, At, b, mu, x0, **kwargs):
 
 if __name__ == "__main__":
     # Number of measurements
-    M = 200
+    M = 1000
 
     # Dimension of sparse signal
-    N = 1000
+    N = 2000
 
     # Signal sparsity
-    K = 10
+    K = 5
 
     # Regularization parameter
-    mu = 0.02
-
-    # Noise level in b
-    sigma = 0.01
+    mu = 40
 
     # Create sparse signal
     x = np.zeros(N)
@@ -51,18 +48,18 @@ if __name__ == "__main__":
 
     # Create matrix
     A = np.random.randn(M, N)
-    A /= la.norm(A, 2)
 
-    # Create noisy observation vector
-    b = A @ x + sigma * np.random.randn(M)
+    # Create observation vector
+    probabilities = 1 / (1 + np.exp(-A @ x))
+    b = 2.0 * (np.random.rand(M) < probabilities) - 1
 
     # Initial iterate
     x0 = np.zeros(N)
 
-    print("Constructed sparse least-squares problem.")
+    print("Constructed sparse logistic least-squares problem.")
 
     # Test the three different algorithms
-    plain, adaptive, accelerated = tests.test_modes(lambda **k: sparse_least_squares(A, A.T, b, mu, x0, **k))
+    plain, adaptive, accelerated = tests.test_modes(lambda **k: sparse_logistic(A, A.T, b, mu, x0, **k))
 
     # Plot the recovered signal
     plots.plot_signals(x, adaptive.solution)

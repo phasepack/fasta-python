@@ -34,14 +34,14 @@ def fasta(A, At, f, gradf, g, proxg, x0,
           verbose=False,
 
           max_iters=1000,
-          tolerance=0,
+          tolerance=1E-5,
 
           stop_rule=hybrid_residual,
           L=None,
           tau0=None,
 
-          backtrack=False,
-          stepsize_shrink=0.2,
+          backtrack=True,
+          stepsize_shrink=0.5,
           window=10,
           max_backtracks=20,
 
@@ -151,7 +151,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
         gradf0 = gradf1
         tau0 = tau1
 
-        # Perform FBS: Take the forwards step by moving x in the direction of f's gradient
+        # Perform FBS: Take the forwards step by moving x in the direction of f's gradient0
         x1hat = x0 - tau0 * gradf1
         # Now take the backwards step by finding a minimizer of g close to x
         x1 = proxg(x1hat, tau0)
@@ -171,10 +171,11 @@ def fasta(A, At, f, gradf, g, proxg, x0,
             M = np.max(f_hist[max(i - window, 0) : max(i, 1)])
 
             # Check if the quadratic approximation of f is an upper bound; if it's not, FBS isn't guaranteed to converge
-            while f1 - (M + np.real(Dx.flatten().T @ gradf0.flatten()) + la.norm(Dx)**2 / (2 * tau0)) > 0 \
+            while f1 - (M + np.real(Dx.ravel().T @ gradf0.ravel()) + la.norm(Dx)**2 / (2 * tau0)) > EPSILON \
                     and backtrack_count < max_backtracks:
-                # We've gone too far, so shrink the stepsize and try FBS again
-                tau0 *= stepsize_shrink
+                # We've gone too far, so shrink the stepsize and try FBS again (be twice as aggressive for
+                # adaptive stepsize selection)
+                tau0 *= stepsize_shrink / (2 if adaptive else 1)
 
                 # Redo the FBS step
                 x1hat = x0 - tau0 * gradf0
@@ -200,7 +201,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
             alpha0 = alpha1
 
             # Prevent alpha from growing too large by restarting the acceleration
-            if restart and (x0 - x1).flatten().T @ (x1 - x_accel0).flatten() > 0:
+            if restart and (x0 - x1).ravel().T @ (x1 - x_accel0).ravel() > 0:
                 alpha0 = 1
 
             # Recalculate acceleration parameter
@@ -222,7 +223,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
         # select a new stepsize for each iteration
         if adaptive:
             Dg = gradf1 + (x1hat - x0) / tau0
-            dotprod = np.real(Dx.flatten().T @ Dg.flatten())
+            dotprod = np.real(Dx.ravel().T @ Dg.ravel())
 
             # Least squares estimate using a
             tau_s = la.norm(Dx) ** 2 / dotprod

@@ -1,4 +1,4 @@
-"""Solve the democratic representation problem (L-inf-penalized least-squares),
+"""Solve the democratic representation problem (L-inf-penalized least squares),
 
 min mu||x||_inf + .5||Ax-b||^2
 
@@ -18,6 +18,7 @@ def democratic_representation(A, At, b, mu, x0, **kwargs):
     """Solve the democratic representation problem.
 
     :param A: A matrix or function handle.
+    :param At: The transpose of A.
     :param b: A measurement vector.
     :param mu: A parameter controlling the regularization.
     :param x0: An initial guess for the solution.

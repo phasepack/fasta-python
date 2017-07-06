@@ -1,4 +1,4 @@
-"""Solve the L1-restricted least-squares problem,
+"""Solve the L1-restricted least squares problem,
 
 min .5||Ax-b||^2, ||x||_1 < mu
 
@@ -14,7 +14,7 @@ from fasta import fasta, tests, proximal, plots
 
 
 def lasso(A, At, b, mu, x0, **kwargs):
-    """Solve the L1-restricted least-squares problem.
+    """Solve the L1-restricted least squares problem.
 
     :param A: A matrix or function handle.
     :param At: The transpose of A.
