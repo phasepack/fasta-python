@@ -1,8 +1,12 @@
-"""Solve the L1-penalized least squares problem (also known as basis pursuit denoising, or BPDN),
+"""Solve the L1-penalized logistic least squares problem,
 
-min mu||x||_1 + .5||Ax-b||^2
+min mu||x||_1 + logit(Ax,b)
 
-using the FASTA solver."""
+using the FASTA solver, where the logistic log-odds function is defined as,
+
+logic(z,b) = sum_i log(1 + e^(z_i)) - b_i z_i,
+
+where z_i and b_i are the ith rows of z and b, respectively."""
 
 __author__ = "Noah Singer"
 
@@ -50,8 +54,8 @@ if __name__ == "__main__":
     A = np.random.randn(M, N)
 
     # Create observation vector
-    probabilities = 1 / (1 + np.exp(-A @ x))
-    b = 2.0 * (np.random.rand(M) < probabilities) - 1
+    p = 1 / (1 + np.exp(-A @ x))
+    b = 2.0 * (np.random.rand(M) < p) - 1
 
     # Initial iterate
     x0 = np.zeros(N)

@@ -63,17 +63,17 @@ if __name__ == "__main__":
     sigma = 0.1
 
     # Create sparse signal
-    X = np.zeros((N,L))
-    X[np.random.permutation(N)[:K],] = np.random.randn(K,L)
+    X = np.zeros((N, L))
+    X[np.random.permutation(N)[:K],] = np.random.randn(K, L)
 
     # Create matrix
     A = np.random.randn(M, N)
 
     # Create noisy observation matrix
-    B = A @ X + sigma * np.random.randn(M,L)
+    B = A @ X + sigma * np.random.randn(M, L)
 
     # Initial iterate
-    X0 = np.zeros((N,L))
+    X0 = np.zeros((N, L))
 
     print("Constructed MMV problem.")
 

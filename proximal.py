@@ -1,8 +1,9 @@
 import numpy as np
+from numpy import linalg as la
 
 
 def project_Linf_ball(x, t):
-    """Project a vector onto a L-inf ball of radius t."""
+    """Project a vector onto an L-inf ball of radius t."""
 
     N = len(x)
     xabs = np.abs(x)
@@ -21,10 +22,21 @@ def project_Linf_ball(x, t):
 
 
 def project_L1_ball(x, t):
-    """Project a vector onto a L1 ball of radius t."""
+    """Project a vector onto an L1 ball of radius t."""
 
     # By Moreau's identity, we convert to proximal of conjugate problem (L-inf norm)
     return x - project_Linf_ball(x, t)
+
+
+def project_Lnuc_ball(X, t):
+    """Project a matrix onto a ball induced by the nuclear norm of radius t."""
+
+    U, s, V = la.svd(X)
+
+    # Construct the diagonal matrix, S, as a shrunken version of the original diagonal
+    S = np.zeros(X.shape)
+    S[:len(s),:len(s)] = np.diag(shrink(s, t))
+    return U @ S @ V
 
 
 def shrink(x, t):

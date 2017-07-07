@@ -132,7 +132,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
     if accelerate:
         x_accel1 = x1
         z_accel1 = z1
-        alpha1 = 1
+        alpha1 = 1.0
 
     # Additional initialization for backtracking
     if backtrack:
@@ -202,7 +202,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
 
             # Prevent alpha from growing too large by restarting the acceleration
             if restart and (x0 - x1).ravel().T @ (x1 - x_accel0).ravel() > 0:
-                alpha0 = 1
+                alpha0 = 1.0
 
             # Recalculate acceleration parameter
             alpha1 = (1 + np.sqrt(1 + 4 * alpha0**2)) / 2
