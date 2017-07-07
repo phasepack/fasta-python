@@ -1,10 +1,8 @@
 """Solve the L1-restricted least squares problem,
 
-min .5||Ax-b||^2, ||x||_1 < mu
+min_x .5||Ax-b||^2, ||x||_1 < mu,
 
-using the FASTA solver. We express this as min f(Ax) + g(x), where f(Ax) = .5||Ax-b||^2
-and g(x) = { 0           |x| < mu
-           { infinity    otherwise."""
+using the FASTA solver. The problem is re-expressed with a characteristic function function for the constraint."""
 
 __author__ = "Noah Singer"
 

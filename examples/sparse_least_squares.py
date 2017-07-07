@@ -1,6 +1,6 @@
 """Solve the L1-penalized least squares problem (also known as basis pursuit denoising, or BPDN),
 
-min mu||x||_1 + .5||Ax-b||^2
+min_x mu||x||_1 + .5||Ax-b||^2,
 
 using the FASTA solver."""
 

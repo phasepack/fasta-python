@@ -1,8 +1,10 @@
-"""Solve the democratic representation problem (L-inf-penalized least squares),
+"""Solve the total-variation denoising problem,
 
-min_x mu||x||_inf + .5||Ax-b||^2,
+min mu||X-
 
-using the FASTA solver.."""
+using the FASTA solver. We express this as min f(Ax) + g(x), where f(Ax) = .5||Ax-b||^2
+and g(x) = { 0           |x| < mu
+           { infinity    otherwise."""
 
 __author__ = "Noah Singer"
 
@@ -12,7 +14,7 @@ from scipy.fftpack import dct, idct
 from fasta import fasta, tests, proximal, plots
 
 
-def democratic_representation(A, At, b, mu, x0, **kwargs):
+def total_variation(A, At, b, mu, x0, **kwargs):
     """Solve the democratic representation problem.
 
     :param A: A matrix or function handle.

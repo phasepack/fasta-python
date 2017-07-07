@@ -1,13 +1,11 @@
 """Solve the 1-bit matrix completion problem,
 
-min mu||x||* + logit(X,B)
+min_X mu||X||* + logit(X,B),
 
 using the FASTA solver, where ||-||* denotes the sparse-inducing nuclear norm, and
 the logistic log-odds function is defined as,
 
-logic(z,b) = sum_i log(1 + e^(z_i)) - b_i z_i,
-
-where z_i and b_i are the ith rows of z and b, respectively."""
+logit(Z,B) = sum_ij log(1 + e^(Z_ij)) - B_ij Z_ij."""
 
 __author__ = "Noah Singer"
 

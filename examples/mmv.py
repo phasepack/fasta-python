@@ -1,12 +1,12 @@
 """Solve the multiple measurement vector (MMV) problem,
 
-min mu*MMV(X) + .5||AX-B||^2
+min_X mu*MMV(X) + .5||AX-B||^2,
 
 using the FASTA solver. X is a matrix, and so the norm ||AX-B|| is the Frobenius norm.
 The problem assumes that each column has the same sparsity pattern, and so the sparsity constraint on the matrix X
 is formulated as,
 
-MMV(x) = sum_i ||X_i||,
+MMV(X) = sum_i ||X_i||,
 
 where X_i denotes the ith row of X."""
 

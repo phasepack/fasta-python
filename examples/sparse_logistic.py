@@ -1,6 +1,6 @@
 """Solve the L1-penalized logistic least squares problem,
 
-min mu||x||_1 + logit(Ax,b)
+min mu||x||_1 + logit(Ax,b),
 
 using the FASTA solver, where the logistic log-odds function is defined as,
 
