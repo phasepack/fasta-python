@@ -6,7 +6,7 @@ import numpy as np
 from fasta import plots
 
 
-TOLERANCE = 1E-3
+TOLERANCE = 1E-8
 
 
 def test_modes(solver):

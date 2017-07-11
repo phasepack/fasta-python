@@ -1,6 +1,6 @@
 """Solve the L1-penalized non-negative matrix factorization problem,
 
-min_X,Y mu||X||_1 + ||S - XY^T||, X >= 0, Y >= 0, ||Y||_inf <= 1
+min_{X,Y} mu||X||_1 + ||S - XY^T||, X >= 0, Y >= 0, ||Y||_inf <= 1
 
 using the FASTA solver. This problem is non-convex, but FBS is still often effective."""
 
@@ -67,11 +67,11 @@ if __name__ == "__main__":
     sigma = 0.1
 
     # Create random factor matrices
-    X = np.random.randn(M, K)
-    Y = np.random.randn(N, K)
+    X = np.random.rand(M, K)
+    Y = np.random.rand(N, K)
 
     # Make X sparse
-    X *= np.random.randn(M, K) > b
+    X *= np.random.rand(M, K) > b
 
     # Create observation matrix
     S = X @ Y.T + sigma * np.random.randn(M, N)
