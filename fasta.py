@@ -27,6 +27,7 @@ EPSILON = 1E-12
 
 
 # TODO: check mutually allowed modes
+# TODO: adjust to allow tensors
 
 def fasta(A, At, f, gradf, g, proxg, x0,
           adaptive=True,
@@ -52,7 +53,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
     :param adaptive: Adaptively choose the stepsize by locally approximating the function as a quadratic (default: True).
     :param accelerate: Increase the stepsize at every step of the algorithm (default: False).
     :param verbose: Print detailed convergence information as the algorithm progresses (default: False).
-    :param A: A matrix, or a function that returns a matrix, which is equal to A*x.
+    :param A: A linear operator (often just a matrix).
     :param At: The adjoint (conjugate transpose) of A.
     :param f: A convex, differentiable function of x.
     :param gradf: The gradient of f.
@@ -92,7 +93,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
         gradf2 = At(gradf(A(x2)))
 
         # Approximate the Lipschitz constant of f
-        L = la.norm(gradf1 - gradf2) / la.norm(x1 - x2)
+        L = la.norm((gradf1 - gradf2).ravel()) / la.norm((x1 - x2).ravel())
 
         # We're guaranteed that FBS converges for tau <= 2.0 / L
         tau0 = (2 / L) / 10
@@ -153,6 +154,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
 
         # Perform FBS: Take the forwards step by moving x in the direction of f's gradient0
         x1hat = x0 - tau0 * gradf1
+
         # Now take the backwards step by finding a minimizer of g close to x
         x1 = proxg(x1hat, tau0)
 
@@ -171,7 +173,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
             M = np.max(f_hist[max(i - window, 0) : max(i, 1)])
 
             # Check if the quadratic approximation of f is an upper bound; if it's not, FBS isn't guaranteed to converge
-            while f1 - (M + np.real(Dx.ravel().T @ gradf0.ravel()) + la.norm(Dx)**2 / (2 * tau0)) > EPSILON \
+            while f1 - (M + np.real(Dx.ravel().T @ gradf0.ravel()) + la.norm(Dx.ravel())**2 / (2 * tau0)) > EPSILON \
                     and backtrack_count < max_backtracks:
                 # We've gone too far, so shrink the stepsize and try FBS again (be twice as aggressive for
                 # adaptive stepsize selection)
@@ -226,9 +228,9 @@ def fasta(A, At, f, gradf, g, proxg, x0,
             dotprod = np.real(Dx.ravel().T @ Dg.ravel())
 
             # Least squares estimate using a
-            tau_s = la.norm(Dx) ** 2 / dotprod
+            tau_s = la.norm(Dx.ravel()) ** 2 / dotprod
             # Least squares estimate using t = 1/a
-            tau_m = max(dotprod / la.norm(Dg) ** 2, 0)
+            tau_m = max(dotprod / la.norm(Dg.ravel()) ** 2, 0)
 
             # Use an adaptive combination of tau_s and tau_m
             if 2 * tau_m > tau_s:
@@ -240,9 +242,9 @@ def fasta(A, At, f, gradf, g, proxg, x0,
             if tau1 <= 0 or np.isinf(tau1) or np.isnan(tau1):
                 tau1 = tau0 * 1.5
 
-        residual_hist[i] = la.norm(Dx) / tau0
+        residual_hist[i] = la.norm(Dx.ravel()) / tau0
 
-        normalizer = max(la.norm(gradf0), la.norm(x1 - x1hat) / tau0) + EPSILON
+        normalizer = max(la.norm(gradf0.ravel()), la.norm((x1 - x1hat).ravel()) / tau0) + EPSILON
 
         # Record convergence information
         iterate_hist[i, :] = x0

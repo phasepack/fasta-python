@@ -1,8 +1,12 @@
-"""Solve the L1-penalized least squares problem (also known as basis pursuit denoising, or BPDN),
+"""Solve the phase retrieval problem,
 
-min_x mu||x||_1 + .5||Ax-b||^2,
+|a_i . x|^2 = b_i,
 
-using the FASTA solver."""
+for some measurement vectors a_i and measured magnitudes b_i. This non-convex
+problem is relaxed into the PhaseLift problem by letting A_i = a_i a_i^T and
+
+
+using the FASTA solver. The problem is re-expressed with a characteristic function function for the constraint."""
 
 __author__ = "Noah Singer"
 
@@ -11,8 +15,8 @@ from numpy import linalg as la
 from fasta import fasta, tests, proximal, plots
 
 
-def sparse_least_squares(A, At, b, mu, x0, **kwargs):
-    """Solve the L1-penalized least squares problem.
+def lasso(A, At, b, mu, x0, **kwargs):
+    """Solve the L1-restricted least squares problem.
 
     :param A: A matrix or function handle.
     :param At: The transpose of A.
@@ -24,8 +28,8 @@ def sparse_least_squares(A, At, b, mu, x0, **kwargs):
     """
     f = lambda z: .5 * la.norm((z - b).ravel())**2
     gradf = lambda z: z - b
-    g = lambda x: mu * la.norm(x.ravel(), 1)
-    proxg = lambda x, t: proximal.shrink(x, t*mu)
+    g = lambda x: 0 # TODO: add an extra condition to this
+    proxg = lambda x, t: proximal.project_L1_ball(x, mu)
 
     x = fasta(A, At, f, gradf, g, proxg, x0, **kwargs)
 
@@ -41,15 +45,15 @@ if __name__ == "__main__":
     # Signal sparsity
     K = 10
 
-    # Regularization parameter
-    mu = 0.02
-
     # Noise level in b
     sigma = 0.01
 
     # Create sparse signal
     x = np.zeros(N)
     x[np.random.permutation(N)[:K]] = 1
+
+    # Regularization parameter
+    mu = 0.8 * la.norm(x, 1)
 
     # Create matrix
     A = np.random.randn(M, N)
@@ -61,11 +65,11 @@ if __name__ == "__main__":
     # Initial iterate
     x0 = np.zeros(N)
 
-    print("Constructed sparse least-squares problem.")
+    print("Constructed lasso problem.")
 
     # Test the three different algorithms
-    plain, adaptive, accelerated = tests.test_modes(lambda **k: sparse_least_squares(A, A.T, b, mu, x0, **k))
+    plain, adaptive, accelerated = tests.test_modes(lambda **k: lasso(A, A.T, b, mu, x0, **k))
 
     # Plot the recovered signal
-    plots.plot_signals("Sparse Least Squares Regression", x, adaptive[0])
+    plots.plot_signals(x, adaptive.solution)
     plots.show_plots()

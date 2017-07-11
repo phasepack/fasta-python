@@ -2,10 +2,10 @@
 
 min_X mu||X||* + logit(X,B),
 
-using the FASTA solver, where ||-||* denotes the sparse-inducing nuclear norm, and
+using the FASTA solver, where ||-||* denotes the sparsity-inducing nuclear norm, and
 the logistic log-odds function is defined as,
 
-logit(Z,B) = sum_ij log(1 + e^(Z_ij)) - B_ij Z_ij."""
+logit(Z,B) = sum_ij log(1 + e^(Z_ij)) - B_ij * Z_ij."""
 
 __author__ = "Noah Singer"
 
@@ -24,7 +24,7 @@ def logistic_matrix_completion(B, mu, X0, **kwargs):
     :return: The output of the FASTA solver on the problem.
     """
 
-    # A and At are identities
+    # Condition matrices are simply the identity
     A = lambda X: X
     At = lambda X: X
 
@@ -33,7 +33,9 @@ def logistic_matrix_completion(B, mu, X0, **kwargs):
     g = lambda X: mu * la.norm(np.diag(la.svd(X)[1]), 1)
     proxg = lambda X, t: proximal.project_Lnuc_ball(X, t*mu)
 
-    return fasta(A, At, f, gradf, g, proxg, X0, **kwargs)
+    X = fasta(A, At, f, gradf, g, proxg, X0, **kwargs)
+
+    return X, X.solution
 
 if __name__ == "__main__":
     # Number of rows
@@ -72,5 +74,5 @@ if __name__ == "__main__":
     plain, adaptive, accelerated = tests.test_modes(lambda **k: logistic_matrix_completion(B, mu, X0, **k))
 
     # Plot the recovered signal
-    plots.plot_matrices(B, adaptive.solution)
+    plots.plot_matrices("Logistic Matrix Completion", B, adaptive[0])
     plots.show_plots()

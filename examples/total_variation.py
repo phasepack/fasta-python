@@ -1,76 +1,110 @@
 """Solve the total-variation denoising problem,
 
-min mu||X-
+min_X mu*TV(X) + .5*||X-M||^2,
 
-using the FASTA solver. We express this as min f(Ax) + g(x), where f(Ax) = .5||Ax-b||^2
-and g(x) = { 0           |x| < mu
-           { infinity    otherwise."""
+using the FASTA solver, where M is a noisy image and TV(X) represents the total-variation seminorm,
+
+TV(X) = sum_ij sqrt( (X_{i+1,j} - X_{i,j})^2 + (X_{i,j+1} - X_{i,j})^2 ).
+
+This is accomplished by forming the dual problem,
+
+min_Y ||div(grad(Y)) - M/mu||^2.
+"""
 
 __author__ = "Noah Singer"
 
 import numpy as np
 from numpy import linalg as la
-from scipy.fftpack import dct, idct
+import scipy.misc
 from fasta import fasta, tests, proximal, plots
 
 
-def total_variation(A, At, b, mu, x0, **kwargs):
-    """Solve the democratic representation problem.
+def grad(X):
+    """The gradient operator on an N-dimensional array, returning an (N+1)-dimensional array, where the
+    (N+1)st dimension contains N entries, each represents the gradient in one direction."""
 
-    :param A: A matrix or function handle.
-    :param At: The transpose of A.
-    :param b: A measurement vector.
+    # Allocate memory for gradient
+    gradient = np.zeros(X.shape + (X.ndim,))
+
+    for dim in range(X.ndim):
+        # Set gradient to shifted matrix
+        gradient[...,dim] = np.roll(X, 1, axis=dim) - X
+
+    return gradient
+
+
+def div(X):
+    """The divergence operator on an N-dimensional array, returning an (N-1)-dimensional array. It performs
+    backwards differences and sums the differences, acting as the adjoint operator to the gradient."""
+
+    N = X.shape[-1]
+    assert N == X.ndim-1
+
+    # Allocate memory for divergence
+    divergence = np.zeros(X.shape[:-1])
+
+    for dim in range(N):
+        # Take the partial in X in our dimension
+        slice = X[...,dim]
+
+        # Shift backwards and add
+        divergence += np.roll(slice, -1, axis=dim) - slice
+
+    return divergence
+
+
+def total_variation(M, mu, Y0, **kwargs):
+    """Solve the total variation denoising problem.
+
+    :param M: A noisy image.
     :param mu: A parameter controlling the regularization.
-    :param x0: An initial guess for the solution.
-    :param kwargs: Options for the FASTA solver.
+    :param Y0: An initial guess for the gradient of the solution.
     :return: The output of the FASTA solver on the problem.
     """
-    f = lambda z: .5 * la.norm(z - b)**2
-    gradf = lambda z: z - b
-    g = lambda x: mu * la.norm(x, np.inf)
-    proxg = lambda x, t: proximal.project_Linf_ball(x, t*mu)
 
-    return fasta(A, At, f, gradf, g, proxg, x0, **kwargs)
+    f = lambda Z: .5 * la.norm((Z - M/mu).ravel())**2
+    gradf = lambda Z: Z - M/mu
+    g = lambda Y: 0
+
+    def proxg(Y, t):
+        # Norm of the gradient at each point in space
+        norms = la.norm(Y, axis=Y.ndim-1)
+
+        # Scale norms so that gradients have magnitude at least one
+        norms = np.maximum(norms, 1)
+
+        return Y / norms[...,np.newaxis]
+
+    # Solve dual problem
+    Y = fasta(div, grad, f, gradf, g, proxg, Y0, **kwargs)
+
+    return M - mu * div(Y.solution), Y
 
 if __name__ == "__main__":
-    # Number of measurements
-    M = 500
-
-    # Dimension of sparse signal
-    N = 1000
-
     # Regularization parameter
-    mu = 300
+    mu = 0.1
 
-    # Choose a random set of DCT modes to sample
-    samples = np.random.permutation(N-1)[:M] + 1
+    # Noise level in M
+    sigma = 0.05
 
-    # Replace the last DCT mode with a 1, to force sampling the DC mode
-    samples[M-1] = 1
+    # Generate an image
+    N = 512
+    M = scipy.misc.ascent().astype(float)
 
-    # Sort the DCT modes
-    samples.sort()
+    # Normalize M
+    M /= np.max(M)
 
-    # Create the subsampled DCT mask
-    mask = np.zeros(N)
-    mask[samples] = 1
-
-    # Create matrix
-    A = lambda x: mask * dct(x, norm='ortho')
-    At = lambda x: idct(mask * x, norm='ortho')
-
-    # Create random signal, where the unknown measurements correspond to the rows of the DCT that are sampled
-    b = np.zeros(N)
-    b[samples] = np.random.randn(M)
+    # Add noise
+    M += sigma * np.random.randn(N, N)
 
     # Initial iterate
-    x0 = np.zeros(N)
+    Y0 = np.zeros((N, N, 2))
 
-    print("Constructed democratic representation problem.")
+    print("Constructed total-variation denoising problem.")
 
     # Test the three different algorithms
-    plain, adaptive, accelerated = tests.test_modes(lambda **k: democratic_representation(A, At, b, mu, x0, **k))
+    plain, adaptive, accelerated = tests.test_modes(lambda **k: total_variation(M, mu, Y0, **k))
 
     # Plot the recovered signal
-    plots.plot_signals(b, adaptive.solution)
+    plots.plot_matrices("Total Variation Denoising", M, adaptive[0])
     plots.show_plots()

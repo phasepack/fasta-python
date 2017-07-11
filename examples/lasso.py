@@ -22,12 +22,14 @@ def lasso(A, At, b, mu, x0, **kwargs):
     :param kwargs: Options for the FASTA solver.
     :return: The output of the FASTA solver on the problem.
     """
-    f = lambda z: .5 * la.norm(z - b)**2
+    f = lambda z: .5 * la.norm((z - b).ravel())**2
     gradf = lambda z: z - b
-    g = lambda x: 0
+    g = lambda x: 0 # TODO: add an extra condition to this
     proxg = lambda x, t: proximal.project_L1_ball(x, mu)
 
-    return fasta(A, At, f, gradf, g, proxg, x0, **kwargs)
+    x = fasta(A, At, f, gradf, g, proxg, x0, **kwargs)
+
+    return x.solution, x
 
 if __name__ == "__main__":
     # Number of measurements
@@ -65,5 +67,5 @@ if __name__ == "__main__":
     plain, adaptive, accelerated = tests.test_modes(lambda **k: lasso(A, A.T, b, mu, x0, **k))
 
     # Plot the recovered signal
-    plots.plot_signals(x, adaptive.solution)
+    plots.plot_signals("LASSO Regression", x, adaptive[0])
     plots.show_plots()

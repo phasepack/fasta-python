@@ -4,7 +4,7 @@ min mu||x||_1 + logit(Ax,b),
 
 using the FASTA solver, where the logistic log-odds function is defined as,
 
-logic(z,b) = sum_i log(1 + e^(z_i)) - b_i z_i,
+logic(z,b) = sum_i log(1 + e^(z_i)) - b_i * z_i,
 
 where z_i and b_i are the ith rows of z and b, respectively."""
 
@@ -28,10 +28,12 @@ def sparse_logistic(A, At, b, mu, x0, **kwargs):
     """
     f = lambda z: np.sum(np.log(1 + np.exp(z)) - (b==1) * z)
     gradf = lambda z: -b / (1 + np.exp(b * z))
-    g = lambda x: mu * la.norm(x, 1)
+    g = lambda x: mu * la.norm(x.ravel(), 1)
     proxg = lambda x, t: proximal.shrink(x, t*mu)
 
-    return fasta(A, At, f, gradf, g, proxg, x0, **kwargs)
+    x = fasta(A, At, f, gradf, g, proxg, x0, **kwargs)
+
+    return x.solution, x
 
 if __name__ == "__main__":
     # Number of measurements
@@ -66,5 +68,5 @@ if __name__ == "__main__":
     plain, adaptive, accelerated = tests.test_modes(lambda **k: sparse_logistic(A, A.T, b, mu, x0, **k))
 
     # Plot the recovered signal
-    plots.plot_signals(x, adaptive.solution)
+    plots.plot_signals("Sparse Logistic Regression", x, adaptive[0])
     plots.show_plots()

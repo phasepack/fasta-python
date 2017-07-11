@@ -2,7 +2,7 @@
 
 min_x mu||x||_inf + .5||Ax-b||^2,
 
-using the FASTA solver.."""
+using the FASTA solver. The solver promotes a solution with low dynamic range."""
 
 __author__ = "Noah Singer"
 
@@ -23,12 +23,14 @@ def democratic_representation(A, At, b, mu, x0, **kwargs):
     :param kwargs: Options for the FASTA solver.
     :return: The output of the FASTA solver on the problem.
     """
-    f = lambda z: .5 * la.norm(z - b)**2
+    f = lambda z: .5 * la.norm((z - b).ravel())**2
     gradf = lambda z: z - b
     g = lambda x: mu * la.norm(x, np.inf)
     proxg = lambda x, t: proximal.project_Linf_ball(x, t*mu)
 
-    return fasta(A, At, f, gradf, g, proxg, x0, **kwargs)
+    x = fasta(A, At, f, gradf, g, proxg, x0, **kwargs)
+
+    return x.solution, x
 
 if __name__ == "__main__":
     # Number of measurements
@@ -70,5 +72,5 @@ if __name__ == "__main__":
     plain, adaptive, accelerated = tests.test_modes(lambda **k: democratic_representation(A, At, b, mu, x0, **k))
 
     # Plot the recovered signal
-    plots.plot_signals(b, adaptive.solution)
+    plots.plot_signals("Democratic Representation", b, adaptive[0])
     plots.show_plots()

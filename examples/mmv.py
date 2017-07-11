@@ -28,7 +28,7 @@ def mmv(A, At, B, mu, X0, **kwargs):
     :param kwargs: Options for the FASTA solver.
     :return: The output of the FASTA solver on the problem.
     """
-    f = lambda Z: .5 * la.norm(Z-B)**2
+    f = lambda Z: .5 * la.norm((Z-B).ravel())**2
     gradf = lambda Z: Z-B
     g = lambda X: mu * np.sum(np.sqrt(np.sum(X*X, axis=1)))
 
@@ -43,7 +43,9 @@ def mmv(A, At, B, mu, X0, **kwargs):
 
         return X * scale
 
-    return fasta(A, At, f, gradf, g, proxg, X0, **kwargs)
+    X = fasta(A, At, f, gradf, g, proxg, X0, **kwargs)
+
+    return X.solution, X
 
 if __name__ == "__main__":
     # Number of measurements
@@ -78,8 +80,8 @@ if __name__ == "__main__":
     print("Constructed MMV problem.")
 
     # Test the three different algorithms
-    raw, adaptive, accelerated = tests.test_modes(lambda **k: mmv(A, A.t, B, mu, X0, **k))
+    raw, adaptive, accelerated = tests.test_modes(lambda **k: mmv(A, A.T, B, mu, X0, **k))
 
     # Plot the recovered signal
-    plots.plot_matrices(X, adaptive.solution)
+    plots.plot_matrices("Multi-Measurement Vector Recovery", X, adaptive[0])
     plots.show_plots()
