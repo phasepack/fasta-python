@@ -15,7 +15,6 @@ __author__ = "Noah Singer"
 
 import numpy as np
 from numpy import linalg as la
-import scipy.misc
 from fasta import fasta, tests, proximal, plots
 
 

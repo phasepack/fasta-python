@@ -5,6 +5,7 @@ __author__ = "Noah Singer"
 import numpy as np
 from matplotlib import pyplot as plt
 
+EPSILON = 1E-32
 
 def plot_convergence(solvers, labels):
     """Plot the convergence curves of various solvers."""
@@ -24,11 +25,11 @@ def plot_convergence(solvers, labels):
 
     # Plot the values of the objective function
     objective.set_xlabel("Iteration #")
-    objective.set_ylabel("log(objective)")
+    objective.set_ylabel("f(Ax) + g(x)")
     objective.set_title("Objective Function")
 
     for solver, label in zip(solvers, labels):
-        objective.plot(np.log(solver.objectives[:solver.iteration_count]), label=label)
+        objective.plot(solver.objectives[:solver.iteration_count], label=label)
 
     objective.legend()
 

@@ -22,10 +22,6 @@ def non_negative_factorization(S, mu, X0, Y0, **kwargs):
     :return: The output of the FASTA solver on the problem.
     """
 
-    # Condition matrices are simply the identity
-    A = lambda X: X
-    At = lambda X: X
-
     # Combine unknowns into single matrix so FASTA can handle them
     Z0 = np.concatenate((X0, Y0))
 
@@ -43,7 +39,7 @@ def non_negative_factorization(S, mu, X0, Y0, **kwargs):
     g = lambda Z: mu * la.norm(Z[:N,...].ravel(), 1)
     proxg = lambda Z, t: np.concatenate((proximal.shrink(Z[:N,...], t*mu), np.minimum(np.maximum(Z[N:,...], 0), 1)))
 
-    Z = fasta(A, At, f, gradf, g, proxg, Z0, **kwargs)
+    Z = fasta(None, None, f, gradf, g, proxg, Z0, **kwargs)
 
     return (Z.solution[:N,...], Z.solution[N:,...]), Z
 

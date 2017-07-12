@@ -23,7 +23,7 @@ def non_negative_least_squares(A, At, b, x0, **kwargs):
     """
     f = lambda z: .5 * la.norm((z - b).ravel())**2
     gradf = lambda z: z - b
-    g = lambda x: 0 if (x >= -1E-12).all() else np.inf
+    g = lambda x: 0
     proxg = lambda x, t: np.maximum(x, 0)
 
     x = fasta(A, At, f, gradf, g, proxg, x0, **kwargs)

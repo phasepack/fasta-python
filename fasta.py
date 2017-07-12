@@ -64,7 +64,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
     :param tolerance: When the residuals begin to decrease by less than this amount, the algorithm terminates (default: 1e-3).
     :param stop_rule: A function that checks whether the algorithm should terminate (default: stopping.hybrid_residual).
     :param L: The Lipschitz constant of f (default: the term is approximated). Only required if tau is not set.
-    :param tau: The initial stepsize for the algorithm (default: computed from L).
+    :param tau0: The initial stepsize for the algorithm (default: computed from L).
     :param backtrack: Use backtracking line search (default: True).
     :param stepsize_shrink: When backtracking, aggressively decrease the step size to prevent further mistakes (default: 0.2).
     :param window: The lookback window for backtracking (default: 10).
@@ -105,7 +105,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
 
     if verbose:
         print("Initializing FASTA...\n")
-        print("Iteration #\tResidual\tTau\tAlpha\tBacktracks")
+        print("Iteration #\tResidual\tTau\tAlpha\tBacktracks\tObjective")
 
     # Allocate memory for convergence information
     iterate_hist = np.zeros((max_iters,) + x0.shape)
@@ -268,8 +268,10 @@ def fasta(A, At, f, gradf, g, proxg, x0,
             best_quality = quality
 
         if verbose:
-            print("[{:<6}]\t{:>.6}\t{:>.6}\t{:>.6}\t{:>6}".format(i, residual_hist[i], tau_hist[i],
-                                                                   alpha0 if accelerate else 0.0, backtrack_count if backtrack else 0))
+            print("[{:<6}]\t{:>.6}\t{:>.6}\t{:>.6}\t{:>6}\t{:>.6}".format(i, residual_hist[i], tau_hist[i],
+                                                                   alpha0 if accelerate else 0.0,
+                                                                   backtrack_count if backtrack else 0,
+                                                                   objective_hist[i] if evaluate_objective else 0))
 
         if stop_rule(i, residual_hist[i], norm_residual_hist[i], max_residual, tolerance):
             break

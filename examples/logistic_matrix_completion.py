@@ -24,16 +24,12 @@ def logistic_matrix_completion(B, mu, X0, **kwargs):
     :return: The output of the FASTA solver on the problem.
     """
 
-    # Condition matrices are simply the identity
-    A = lambda X: X
-    At = lambda X: X
-
     f = lambda Z: np.sum(np.log(1 + np.exp(Z)) - (B==1) * Z)
     gradf = lambda Z: -B / (1 + np.exp(B * Z))
     g = lambda X: mu * la.norm(np.diag(la.svd(X)[1]), 1)
     proxg = lambda X, t: proximal.project_Lnuc_ball(X, t*mu)
 
-    X = fasta(A, At, f, gradf, g, proxg, X0, **kwargs)
+    X = fasta(None, None, f, gradf, g, proxg, X0, **kwargs)
 
     return X, X.solution
 

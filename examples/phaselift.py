@@ -37,23 +37,23 @@ def lasso(A, At, b, mu, x0, **kwargs):
 
 if __name__ == "__main__":
     # Number of measurements
-    M = 200
+    M = 500
 
-    # Dimension of sparse signal
-    N = 1000
-
-    # Signal sparsity
-    K = 10
+    # Dimension of signal
+    N = 100
 
     # Noise level in b
-    sigma = 0.01
+    sigma = 0.1
 
-    # Create sparse signal
-    x = np.zeros(N)
-    x[np.random.permutation(N)[:K]] = 1
+    # Create complex signal
+    x = np.random.randn(N) + np.random.randn(N)*1j
 
-    # Regularization parameter
-    mu = 0.8 * la.norm(x, 1)
+    # Lifted representation
+    X = x @ x.T
+
+    # Create measurement matrix acting on column vector of lifted representation
+    A = np.zeros((M, N**2))
+
 
     # Create matrix
     A = np.random.randn(M, N)
