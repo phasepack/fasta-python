@@ -27,6 +27,4 @@ def test_modes(solver):
     accelerated = solver(accelerate=True, adaptive=False, evaluate_objective=True, tolerance=TOLERANCE)
     print("Completed in {} iterations.".format(accelerated[1].iteration_count))
 
-    plots.plot_convergence((plain[1], adaptive[1], accelerated[1]), ("Plain", "Adaptive", "Accelerated"))
-
     return plain, adaptive, accelerated

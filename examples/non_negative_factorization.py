@@ -80,8 +80,10 @@ if __name__ == "__main__":
 
     # Test the three different algorithms
     plain, adaptive, accelerated = tests.test_modes(lambda **k: non_negative_factorization(S, mu, X0, Y0, **k))
+    plots.plot_convergence("Non-Negative Matrix Factorization",
+                           (plain[1], adaptive[1], accelerated[1]), ("Plain", "Adaptive", "Accelerated"))
 
     # Plot the recovered signal
-    plots.plot_matrices("X", X, adaptive[0][0])
-    plots.plot_matrices("Y", Y, adaptive[0][1])
+    plots.plot_matrices("Factor X", X, adaptive[0][0])
+    plots.plot_matrices("Factor Y", Y, adaptive[0][1])
     plots.show_plots()

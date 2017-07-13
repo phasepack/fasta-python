@@ -33,15 +33,12 @@ def mmv(A, At, B, mu, X0, **kwargs):
     g = lambda X: mu * np.sum(np.sqrt(np.sum(X*X, axis=1)))
 
     def proxg(X, t):
-        norms = np.sqrt(np.sum(X*X, axis=1))
+        norms = la.norm(X, axis=1)
+
+        # Shrink the norms, and ensure we don't divide by zero
         scale = proximal.shrink(norms, t) / (norms + (norms == 0))
 
-        # Reshape scale to a column vector
-        scale = np.reshape(scale, (len(scale), 1))
-
-        scale = np.kron(scale, np.ones((1, X.shape[1])))
-
-        return X * scale
+        return X * scale[:,np.newaxis]
 
     X = fasta(A, At, f, gradf, g, proxg, X0, **kwargs)
 
@@ -80,8 +77,10 @@ if __name__ == "__main__":
     print("Constructed MMV problem.")
 
     # Test the three different algorithms
-    raw, adaptive, accelerated = tests.test_modes(lambda **k: mmv(A, A.T, B, mu, X0, **k))
+    plain, adaptive, accelerated = tests.test_modes(lambda **k: mmv(A, A.T, B, mu, X0, **k))
+    plots.plot_convergence("Multiple Measurement Vector",
+                           (plain[1], adaptive[1], accelerated[1]), ("Plain", "Adaptive", "Accelerated"))
 
     # Plot the recovered signal
-    plots.plot_matrices("Multi-Measurement Vector Recovery", X, adaptive[0])
+    plots.plot_matrices("Multiple Measurement Vector Recovery", X, adaptive[0])
     plots.show_plots()

@@ -1,8 +1,6 @@
-"""A collection of various utility functions for PhasePack and FASTA."""
+"""A collection of various utility functions for FASTA."""
 
 __author__ = "Noah Singer"
-
-import numpy as np
 
 
 def functionize(A):

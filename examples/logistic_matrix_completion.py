@@ -68,6 +68,8 @@ if __name__ == "__main__":
 
     # Test the three different algorithms
     plain, adaptive, accelerated = tests.test_modes(lambda **k: logistic_matrix_completion(B, mu, X0, **k))
+    plots.plot_convergence("Logistic Matrix Completion",
+                           (plain[1], adaptive[1], accelerated[1]), ("Plain", "Adaptive", "Accelerated"))
 
     # Plot the recovered signal
     plots.plot_matrices("Logistic Matrix Completion", B, adaptive[0])

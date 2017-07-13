@@ -7,11 +7,11 @@ from matplotlib import pyplot as plt
 
 EPSILON = 1E-32
 
-def plot_convergence(solvers, labels):
+def plot_convergence(title, solvers, labels):
     """Plot the convergence curves of various solvers."""
 
     figure, (residuals, objective) = plt.subplots(1, 2)
-    figure.suptitle("FASTA Convergence")
+    figure.suptitle("FASTA Convergence: {}".format(title))
 
     # Plot the normalized residuals
     residuals.set_xlabel("Iteration #")

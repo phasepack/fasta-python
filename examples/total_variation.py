@@ -20,7 +20,7 @@ from fasta import fasta, tests, proximal, plots
 
 def grad(X):
     """The gradient operator on an N-dimensional array, returning an (N+1)-dimensional array, where the
-    (N+1)st dimension contains N entries, each represents the gradient in one direction."""
+    (N+1)st dimension contains N entries, each representing the gradient in one direction."""
 
     # Allocate memory for gradient
     gradient = np.zeros(X.shape + (X.ndim,))
@@ -43,11 +43,11 @@ def div(X):
     divergence = np.zeros(X.shape[:-1])
 
     for dim in range(N):
-        # Take the partial in X in our dimension
-        slice = X[...,dim]
+        # Take the partial derivative in X in our dimension
+        dX = X[...,dim]
 
         # Shift backwards and add
-        divergence += np.roll(slice, -1, axis=dim) - slice
+        divergence += np.roll(dX, -1, axis=dim) - dX
 
     return divergence
 
