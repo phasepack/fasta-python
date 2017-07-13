@@ -14,6 +14,7 @@ min_Y ||div(grad(Y)) - M/mu||^2.
 __author__ = "Noah Singer"
 
 import numpy as np
+import scipy
 from numpy import linalg as la
 from fasta import fasta, tests, proximal, plots
 
@@ -79,7 +80,8 @@ def total_variation(M, mu, Y0, **kwargs):
 
     return M - mu * div(Y.solution), Y
 
-if __name__ == "__main__":
+
+def test():
     # Regularization parameter
     mu = 0.1
 
@@ -107,3 +109,6 @@ if __name__ == "__main__":
     # Plot the recovered signal
     plots.plot_matrices("Total Variation Denoising", M, adaptive[0])
     plots.show_plots()
+
+if __name__ == "__main__":
+    test()

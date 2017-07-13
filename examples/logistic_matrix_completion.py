@@ -33,7 +33,8 @@ def logistic_matrix_completion(B, mu, X0, **kwargs):
 
     return X, X.solution
 
-if __name__ == "__main__":
+
+def test():
     # Number of rows
     M = 200
 
@@ -74,3 +75,6 @@ if __name__ == "__main__":
     # Plot the recovered signal
     plots.plot_matrices("Logistic Matrix Completion", B, adaptive[0])
     plots.show_plots()
+
+if __name__ == "__main__":
+    test()

@@ -44,7 +44,8 @@ def mmv(A, At, B, mu, X0, **kwargs):
 
     return X.solution, X
 
-if __name__ == "__main__":
+
+def test():
     # Number of measurements
     M = 20
 
@@ -84,3 +85,6 @@ if __name__ == "__main__":
     # Plot the recovered signal
     plots.plot_matrices("Multiple Measurement Vector Recovery", X, adaptive[0])
     plots.show_plots()
+
+if __name__ == "__main__":
+    test()

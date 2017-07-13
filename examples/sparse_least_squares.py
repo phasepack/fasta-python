@@ -31,7 +31,8 @@ def sparse_least_squares(A, At, b, mu, x0, **kwargs):
 
     return x.solution, x
 
-if __name__ == "__main__":
+
+def test():
     # Number of measurements
     M = 200
 
@@ -61,7 +62,7 @@ if __name__ == "__main__":
     # Initial iterate
     x0 = np.zeros(N)
 
-    print("Constructed sparse least-squares problem.")
+    print("Constructed sparse least squares problem.")
 
     # Test the three different algorithms
     plain, adaptive, accelerated = tests.test_modes(lambda **k: sparse_least_squares(A, A.T, b, mu, x0, **k))
@@ -71,3 +72,6 @@ if __name__ == "__main__":
     # Plot the recovered signal
     plots.plot_signals("Sparse Least Squares Regression", x, adaptive[0])
     plots.show_plots()
+
+if __name__ == "__main__":
+    test()

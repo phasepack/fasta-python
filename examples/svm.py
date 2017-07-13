@@ -37,7 +37,8 @@ def svm(D, L, C, y0, **kwargs):
 
     return D.T @ (L * y.solution), y
 
-if __name__ == "__main__":
+
+def test():
     # Number of observation vectors
     M = 1000
 
@@ -49,11 +50,11 @@ if __name__ == "__main__":
 
     # Mask representing (+) and (-) labels
     permutation = np.random.permutation(M)
-    negative = permutation[:M//2]
-    positive = permutation[M//2:]
+    negative = permutation[:M // 2]
+    positive = permutation[M // 2:]
 
     # Generate linearly separable data
-    D = 2 * np.random.randn(M,N)
+    D = 2 * np.random.randn(M, N)
     D[negative] -= 1.0
     D[positive] += 1.0
 
@@ -83,3 +84,6 @@ if __name__ == "__main__":
     axes.legend()
 
     plots.show_plots()
+
+if __name__ == "__main__":
+    test()

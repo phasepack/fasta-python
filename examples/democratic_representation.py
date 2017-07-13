@@ -32,7 +32,8 @@ def democratic_representation(A, At, b, mu, x0, **kwargs):
 
     return x.solution, x
 
-if __name__ == "__main__":
+
+def test():
     # Number of measurements
     M = 500
 
@@ -43,10 +44,10 @@ if __name__ == "__main__":
     mu = 300
 
     # Choose a random set of DCT modes to sample
-    samples = np.random.permutation(N-1)[:M] + 1
+    samples = np.random.permutation(N - 1)[:M] + 1
 
     # Replace the last DCT mode with a 1, to force sampling the DC mode
-    samples[M-1] = 1
+    samples[M - 1] = 1
 
     # Sort the DCT modes
     samples.sort()
@@ -76,3 +77,6 @@ if __name__ == "__main__":
     # Plot the recovered signal
     plots.plot_signals("Democratic Representation", b, adaptive[0])
     plots.show_plots()
+
+if __name__ == "__main__":
+    test()

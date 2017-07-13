@@ -43,7 +43,8 @@ def non_negative_factorization(S, mu, X0, Y0, **kwargs):
 
     return (Z.solution[:N,...], Z.solution[N:,...]), Z
 
-if __name__ == "__main__":
+
+def test():
     # Rows of data matrix
     M = 800
 
@@ -87,3 +88,6 @@ if __name__ == "__main__":
     plots.plot_matrices("Factor X", X, adaptive[0][0])
     plots.plot_matrices("Factor Y", Y, adaptive[0][1])
     plots.show_plots()
+
+if __name__ == "__main__":
+    test()

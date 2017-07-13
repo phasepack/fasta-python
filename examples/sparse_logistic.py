@@ -35,7 +35,8 @@ def sparse_logistic(A, At, b, mu, x0, **kwargs):
 
     return x.solution, x
 
-if __name__ == "__main__":
+
+def test():
     # Number of measurements
     M = 1000
 
@@ -70,3 +71,6 @@ if __name__ == "__main__":
     # Plot the recovered signal
     plots.plot_signals("Sparse Logistic Regression", x, adaptive[0])
     plots.show_plots()
+
+if __name__ == "__main__":
+    test()

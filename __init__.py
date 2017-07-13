@@ -150,6 +150,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
 
     if func:
         function_hist = np.zeros(max_iters+1)
+        function_hist[0] = func(x1)
 
     # Additional initialization for accelerative descent
     if accelerate:
@@ -181,7 +182,6 @@ def fasta(A, At, f, gradf, g, proxg, x0,
 
         # Now take the backwards step by finding a minimizer of g close to x
         x1 = proxg(x1hat, tau0)
-        print(la.norm(x0), la.norm(x1hat), la.norm(x1))
 
         Dx = x1 - x0
 

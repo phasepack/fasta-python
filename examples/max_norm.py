@@ -12,7 +12,7 @@ from numpy import linalg as la
 from fasta import fasta, tests, proximal, plots
 
 
-def total_variation(S, mu, X0, **kwargs):
+def max_norm(S, mu, X0, **kwargs):
     """Solve the max-norm problem.
 
     :param S: A square matrix.
@@ -37,7 +37,8 @@ def total_variation(S, mu, X0, **kwargs):
 
     return X, X.solution
 
-if __name__ == "__main__":
+
+def test():
     # Regularization parameter
     mu = 0.1
 
@@ -57,11 +58,14 @@ if __name__ == "__main__":
     # Initial iterate
     Y0 = np.zeros((N, N, 2))
 
-    print("Constructed total-variation denoising problem.")
+    print("Constructed max-norm problem.")
 
     # Test the three different algorithms
-    plain, adaptive, accelerated = tests.test_modes(lambda **k: total_variation(M, mu, Y0, **k))
+    plain, adaptive, accelerated = tests.test_modes(lambda **k: max_norm(M, mu, Y0, **k))
 
     # Plot the recovered signal
     plots.plot_matrices("Total Variation Denoising", M, adaptive[0])
     plots.show_plots()
+
+if __name__ == "__main__":
+    test()
