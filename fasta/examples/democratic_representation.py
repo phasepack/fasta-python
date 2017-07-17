@@ -4,24 +4,24 @@ min_x mu||x||_inf + .5||Ax-b||^2,
 
 using the FASTA solver. The solver promotes a solution with low dynamic range."""
 
-__author__ = "Noah Singer"
-
 import numpy as np
 from numpy import linalg as la
 from scipy.fftpack import dct, idct
 from fasta import fasta, tests, proximal, plots
 
+__author__ = "Noah Singer"
+
 
 def democratic_representation(A, At, b, mu, x0, **kwargs):
     """Solve the democratic representation problem.
 
-    :param A: A matrix or function handle.
-    :param At: The transpose of A.
-    :param b: A measurement vector.
-    :param mu: A parameter controlling the regularization.
-    :param x0: An initial guess for the solution.
-    :param kwargs: Options for the FASTA solver.
-    :return: The output of the FASTA solver on the problem.
+    :param A: A matrix or function handle
+    :param At: The transpose of A
+    :param b: A measurement vector
+    :param mu: A parameter controlling the regularization
+    :param x0: An initial guess for the solution
+    :param kwargs: Options for the FASTA solver
+    :return: The problem's computed solution and the full output of the FASTA solver on the problem
     """
     f = lambda z: .5 * la.norm((z - b).ravel())**2
     gradf = lambda z: z - b
@@ -33,16 +33,13 @@ def democratic_representation(A, At, b, mu, x0, **kwargs):
     return x.solution, x
 
 
-def test():
-    # Number of measurements
-    M = 500
+def test(M=500, N=1000, mu=300.0):
+    """Construct a sample democratic representation problem with a randomly subsampled discrete cosine transform.
 
-    # Dimension of sparse signal
-    N = 1000
-
-    # Regularization parameter
-    mu = 300
-
+    :param M: The number of measurements (default: 500)
+    :param N: The dimension of the sparse signal (default: 1000)
+    :param mu: The regularization parameter (default: 300.0)
+    """
     # Choose a random set of DCT modes to sample
     samples = np.random.permutation(N - 1)[:M] + 1
 
@@ -70,9 +67,9 @@ def test():
     print("Constructed democratic representation problem.")
 
     # Test the three different algorithms
-    plain, adaptive, accelerated = tests.test_modes(lambda **k: democratic_representation(A, At, b, mu, x0, **k))
+    adaptive, accelerated, plain = tests.test_modes(lambda **k: democratic_representation(A, At, b, mu, x0, **k))
     plots.plot_convergence("Democratic Representation",
-                           (plain[1], adaptive[1], accelerated[1]), ("Plain", "Adaptive", "Accelerated"))
+                           (adaptive[1], accelerated[1], plain[1]), ("Adaptive", "Accelerated", "Plain"))
 
     # Plot the recovered signal
     plots.plot_signals("Democratic Representation", b, adaptive[0])
@@ -80,3 +77,7 @@ def test():
 
 if __name__ == "__main__":
     test()
+
+del np, la
+del dct, idct
+del fasta, tests, proximal, plots

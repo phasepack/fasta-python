@@ -1,11 +1,10 @@
 """A collection of plots of the results of FASTA."""
 
-__author__ = "Noah Singer"
-
 import numpy as np
 from matplotlib import pyplot as plt
 
-EPSILON = 1E-32
+__author__ = "Noah Singer"
+
 
 def plot_convergence(title, solvers, labels):
     """Plot the convergence curves of various solvers."""
@@ -70,7 +69,10 @@ def plot_matrices(title, original, recovered):
     original_axes.set_aspect(original.shape[1] / original.shape[0])
     recovered_axes.set_aspect(recovered.shape[1] / recovered.shape[0])
 
+
 def show_plots():
     """Display all plots."""
 
     plt.show()
+
+del np, plt

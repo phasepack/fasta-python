@@ -10,23 +10,22 @@ where l_i and z_i are the ith rows of Z and L, respectively.
 The norm of w is minimized in order to promote a maximum-margin classifier.
 """
 
-__author__ = "Noah Singer"
-
 import numpy as np
 from numpy import linalg as la
 from matplotlib import pyplot as plt
 from fasta import fasta, tests, proximal, plots
 
+__author__ = "Noah Singer"
+
 
 def svm(D, L, C, y0, **kwargs):
     """Solve the support vector machine problem.
 
-    :param D: The data matrix.
-    :param L: A vector of labels for the data.
-    :param Y0: An initial guess for the dual variable.
-    :return: The output of the FASTA solver on the problem.
+    :param D: The data matrix
+    :param L: A vector of labels for the data
+    :param Y0: An initial guess for the dual variable
+    :return: The problem's computed solution and the full output of the FASTA solver on the problem.
     """
-
     f = lambda y: .5*la.norm((D.T @ (L * y)).ravel())**2 - np.sum(y)
     gradf = lambda y: L * (D @ (D.T @ (L * y))) - 1
     g = lambda y: 0
@@ -38,16 +37,13 @@ def svm(D, L, C, y0, **kwargs):
     return D.T @ (L * y.solution), y
 
 
-def test():
-    # Number of observation vectors
-    M = 1000
+def test(M=1000, N=15, C=0.01):
+    """Construct random linearly separable, labeled sample data for the SVM solver to classify.
 
-    # Number of features per vector
-    N = 15
-
-    # Regularization parameter
-    C = 0.01
-
+    :param M: The number of observation vectors (default: 1000)
+    :param N: The number of observed features per vector (default: 15)
+    :param C: The regularization parameter (default: 0.01)
+    """
     # Mask representing (+) and (-) labels
     permutation = np.random.permutation(M)
     negative = permutation[:M // 2]
@@ -69,7 +65,9 @@ def test():
     print("Constructed support vector machine problem.")
 
     # Test the three different algorithms
-    plain, adaptive, accelerated = tests.test_modes(lambda **k: svm(D, L, C, y0, **k))
+    adaptive, accelerated, plain = tests.test_modes(lambda **k: svm(D, L, C, y0, **k))
+    plots.plot_convergence("Support Vector Machine",
+                           (adaptive[1], accelerated[1], plain[1]), ("Adaptive", "Accelerated", "Plain"))
 
     w = adaptive[0]
     accuracy = np.sum(np.sign(D @ w) == L) / M
@@ -87,3 +85,6 @@ def test():
 
 if __name__ == "__main__":
     test()
+
+del np, la, plt
+del fasta, tests, proximal, plots

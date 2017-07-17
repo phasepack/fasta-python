@@ -15,15 +15,13 @@ adaptive stepsize selection, acceleration, non-monotone backtracking line search
 and a variety of stopping conditions.
 """
 
-__author__ = "Noah Singer"
-
-
 import numpy as np
 from numpy import linalg as la
 from time import time
 
-from .utils import functionize
-from .stopping import hybrid_residual
+from . import plots, proximal, stopping, tests, utils
+
+__author__ = "Noah Singer"
 
 EPSILON = 1E-12
 
@@ -39,12 +37,12 @@ def fasta(A, At, f, gradf, g, proxg, x0,
           max_iters=1000,
           tolerance=1E-5,
 
-          stop_rule=hybrid_residual,
+          stop_rule=stopping.hybrid_residual,
           L=None,
           tau0=None,
 
-          backtrack=True,
-          stepsize_shrink=0.5,
+          backtrack=False,
+          stepsize_shrink=None,
           window=10,
           max_backtracks=20,
 
@@ -55,30 +53,30 @@ def fasta(A, At, f, gradf, g, proxg, x0,
           func=None):
     """Run the FASTA algorithm.
 
-    :param adaptive: Adaptively choose the stepsize by locally approximating the function as a quadratic (default: True).
-    :param accelerate: Increase the stepsize at every step of the algorithm (default: False).
-    :param verbose: Print detailed convergence information as the algorithm progresses (default: False).
-    :param A: A linear operator (often just a matrix).
-    :param At: The adjoint (conjugate transpose) of A.
-    :param f: A convex, differentiable function of x.
-    :param gradf: The gradient of f.
-    :param g: A convex function of x.
-    :param proxg: The proximal operator of g with stepsize t.
-    :param x0: An initial guess for position of the optimal value (often a vector of zeroes).
-    :param max_iters: The maximum number of iterations allowed by the algorithm (default: 1000).
-    :param tolerance: The numerical tolerance of the algorithm (default: 1e-3).
-    :param stop_rule: A function that checks whether the algorithm should terminate (default: stopping.hybrid_residual).
-    :param L: The Lipschitz constant of f (default: the term is approximated). Only required if tau is not set.
-    :param tau0: The initial stepsize for the algorithm (default: computed from L).
-    :param backtrack: Use backtracking line search (default: True).
-    :param stepsize_shrink: When backtracking, aggressively decrease the step size to prevent further mistakes (default: 0.2).
-    :param window: The lookback window for backtracking (default: 10).
-    :param max_backtracks: The maximum total number of backtracks allowed in a single iteration of the algorithm (default: 20).
-    :param restart: Restart the acceleration of FISTA. Only relevant when accelerating (default: True).
-    :param evaluate_objective: Whether to evaluate the quality of each iterate by the value of the objective (and also record the objective at every step). Otherwise, the iterate quality is judged by the residual (default: False).
-    :param record_iterates: Whether to record the iterate after each iteration (default: False).
-    :param func: A scalar function to evaluate after each iteration (default: None).
-    :return: A guess at an optimizer of h.
+    :param adaptive: Adaptively choose the stepsize by locally approximating the function as a quadratic (default: True)
+    :param accelerate: Increase the stepsize at every step of the algorithm (default: False)
+    :param verbose: Print detailed convergence information as the algorithm progresses (default: False)
+    :param A: A linear operator (often just a matrix)
+    :param At: The adjoint (conjugate transpose) of A
+    :param f: A convex, differentiable function of x
+    :param gradf: The gradient of f
+    :param g: A convex function of x
+    :param proxg: The proximal operator of g with stepsize t
+    :param x0: An initial guess for position of the optimal value (often a vector of zeroes)
+    :param max_iters: The maximum number of iterations allowed by the algorithm (default: 1000)
+    :param tolerance: The numerical tolerance of the algorithm (default: 1e-3)
+    :param stop_rule: A function that checks whether the algorithm should terminate (default: stopping.hybrid_residual)
+    :param L: The Lipschitz constant of f (default: the term is approximated). Only required if tau is not set
+    :param tau0: The initial stepsize for the algorithm (default: computed from L)
+    :param backtrack: Use backtracking line search (default: True)
+    :param stepsize_shrink: When backtracking, decrease the stepsize to prevent further mistakes (default: 0.2 when backtracking, 0.5 otherwise)
+    :param window: The lookback window for backtracking (default: 10)
+    :param max_backtracks: The maximum total number of backtracks allowed in a single iteration of the algorithm (default: 20)
+    :param restart: Restart the acceleration of FISTA. Only relevant when accelerating (default: True)
+    :param evaluate_objective: Whether to evaluate the quality of each iterate by the value of the objective (and also record the objective at every step). Otherwise, the iterate quality is judged by the residual (default: False)
+    :param record_iterates: Whether to record the iterate after each iteration (default: False)
+    :param func: A scalar function to evaluate after each iteration (default: None)
+    :return: A guess at an optimizer of h
     """
 
     # Conventions:
@@ -86,13 +84,20 @@ def fasta(A, At, f, gradf, g, proxg, x0,
     #   - Variables ending with 1 indicate the current round's values
     #   - Variables ending with _hist indicate a history that is tracked between rounds
 
-    A = functionize(A)
-    At = functionize(At)
+    A = utils.functionize(A)
+    At = utils.functionize(At)
 
     # Option to just do gradient descent
-    # if g is None:
-    #     g = lambda x: 0
-    #     proxg = lambda x, t: x
+    if g is None:
+        g = lambda x: 0
+        proxg = lambda x, t: x
+
+    if stepsize_shrink is None and backtrack:
+        if adaptive:
+            # This is more aggressive, since the stepsize increases dynamically
+            stepsize_shrink = 0.2
+        else:
+            stepsize_shrink = 0.5
 
     # Check if we need to approximate the Lipschitz constant of f
     if not L or not tau0:
@@ -109,8 +114,6 @@ def fasta(A, At, f, gradf, g, proxg, x0,
 
         # We're guaranteed that FBS converges for tau <= 2.0 / L
         tau0 = (2 / L) / 10
-
-    print(tau0)
 
     if not tau0:
         tau0 = 1 / L
@@ -165,6 +168,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
     # Non-monotonicity for stopping conditions
     max_residual = -np.inf
     best_quality = np.inf
+    best_iterate = x0
 
     # Algorithm loop
     i = 0
@@ -213,6 +217,8 @@ def fasta(A, At, f, gradf, g, proxg, x0,
                 f1 = f(z1)
                 Dx = x1 - x0
 
+                print("backtrack", i)
+
                 backtrack_count += 1
 
             total_backtracks += backtrack_count
@@ -228,8 +234,9 @@ def fasta(A, At, f, gradf, g, proxg, x0,
             alpha0 = alpha1
 
             # Prevent alpha from growing too large by restarting the acceleration
-            if restart and (x0 - x1).ravel().T @ (x1 - x_accel0).ravel() > 0:
+            if restart and (x0 - x1).ravel().T @ (x1 - x_accel0).ravel() > 1E-30:
                 alpha0 = 1.0
+                print("Restarted acceleration.")
 
             # Recalculate acceleration parameter
             alpha1 = (1 + np.sqrt(1 + 4 * alpha0**2)) / 2
@@ -298,15 +305,16 @@ def fasta(A, At, f, gradf, g, proxg, x0,
             best_quality = quality
 
         if verbose:
-            print("[{:<6}]\t{:>.6}\t{:>.6}\t{:>.6}\t{:>6}\t{:>.6}".format(i, residual_hist[i], tau_hist[i],
+            print("[{:<6}]\t{:e}\t{:e}\t{:e}\t{:6}\t{:e}".format(i, residual_hist[i], tau_hist[i],
                                                                    alpha0 if accelerate else 0.0,
                                                                    backtrack_count if backtrack else 0,
                                                                    objective_hist[i] if evaluate_objective else 0))
 
-        i += 1
-
         if stop_rule(i, residual_hist[i], norm_residual_hist[i], max_residual, tolerance):
+            i += 1
             break
+
+        i += 1
 
     times[i] = time()
 
@@ -331,3 +339,5 @@ def fasta(A, At, f, gradf, g, proxg, x0,
         result['function_hist'] = function_hist
 
     return type('FASTAResult', (object,), result)
+
+del np, la, time

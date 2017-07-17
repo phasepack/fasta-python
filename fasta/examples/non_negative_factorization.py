@@ -4,24 +4,23 @@ min_{X,Y} mu||X||_1 + ||S - XY^T||, X >= 0, Y >= 0, ||Y||_inf <= 1
 
 using the FASTA solver. This problem is non-convex, but FBS is still often effective."""
 
-__author__ = "Noah Singer"
-
 import numpy as np
 from numpy import linalg as la
 from fasta import fasta, tests, proximal, plots
+
+__author__ = "Noah Singer"
 
 
 def non_negative_factorization(S, mu, X0, Y0, **kwargs):
     """Solve the L1-penalized non-negative matrix factorization problem.
 
-    :param S: A matrix to factorize.
-    :param mu: A parameter controlling the regularization.
-    :param X0: An initial guess for the sparse factor.
-    :param Y0: An initial guess for the small factor.
-    :param kwargs: Options for the FASTA solver.
-    :return: The output of the FASTA solver on the problem.
+    :param S: A matrix to factorize
+    :param mu: A parameter controlling the regularization
+    :param X0: An initial guess for the sparse factor
+    :param Y0: An initial guess for the small factor
+    :param kwargs: Options for the FASTA solver
+    :return: The problem's computed solution and the full output of the FASTA solver on the problem.
     """
-
     # Combine unknowns into single matrix so FASTA can handle them
     Z0 = np.concatenate((X0, Y0))
 
@@ -31,8 +30,11 @@ def non_negative_factorization(S, mu, X0, Y0, **kwargs):
     f = lambda Z: .5 * la.norm((S - Z[:N,...] @ Z[N:,...].T).ravel())**2
 
     def gradf(Z):
+        # Split the iterate matrix into the X and Y matrices
         X = Z[:N,...]
         Y = Z[N:,...]
+
+        # Compute the actual gradient
         d = X @ Y.T - S
         return np.concatenate((d @ Y, d.T @ X))
 
@@ -44,25 +46,16 @@ def non_negative_factorization(S, mu, X0, Y0, **kwargs):
     return (Z.solution[:N,...], Z.solution[N:,...]), Z
 
 
-def test():
-    # Rows of data matrix
-    M = 800
+def test(M=800, N=200, K=10, b=0.75, sigma=0.1, mu=1.0):
+    """Construct a sample non-negative factorization problem by computing two random matrices, making one sparse, and taking their product.
 
-    # Columns of data matrix
-    N = 200
-
-    # Rank of factorization
-    K = 10
-
-    # Regularization parameter
-    mu = 1
-
-    # Sparsity parameter for first factor
-    b = 0.75
-
-    # Noise level in observation matrix
-    sigma = 0.1
-
+    :param M: The number of rows in the data matrix (default: 800)
+    :param N: The number of columns in the data matrix (default: 200)
+    :param K: The rank of the factorization (default: 10)
+    :param b: The sparsity parameter for the first factor, X (default: 0.75)
+    :param sigma: The noise level in the observation matrix (default: 0.1)
+    :param mu: The regularization parameter (default: 1.0)
+    """
     # Create random factor matrices
     X = np.random.rand(M, K)
     Y = np.random.rand(N, K)
@@ -80,9 +73,9 @@ def test():
     print("Constructed non-negative matrix factorization problem.")
 
     # Test the three different algorithms
-    plain, adaptive, accelerated = tests.test_modes(lambda **k: non_negative_factorization(S, mu, X0, Y0, **k))
+    adaptive, accelerated, plain = tests.test_modes(lambda **k: non_negative_factorization(S, mu, X0, Y0, **k))
     plots.plot_convergence("Non-Negative Matrix Factorization",
-                           (plain[1], adaptive[1], accelerated[1]), ("Plain", "Adaptive", "Accelerated"))
+                           (adaptive[1], accelerated[1], plain[1]), ("Adaptive", "Accelerated", "Plain"))
 
     # Plot the recovered signal
     plots.plot_matrices("Factor X", X, adaptive[0][0])
@@ -91,3 +84,6 @@ def test():
 
 if __name__ == "__main__":
     test()
+
+del np, la
+del fasta, tests, proximal, plots

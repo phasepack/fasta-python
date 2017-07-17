@@ -1,5 +1,9 @@
+"""Various common proximal operators of functions."""
+
 import numpy as np
 from numpy import linalg as la
+
+__author__ = "Noah Singer"
 
 
 def project_Linf_ball(x, t):
@@ -43,3 +47,5 @@ def shrink(x, t):
     """The vector shrink operator, which is also the proximal operator for the L1-norm."""
 
     return np.sign(x) * np.maximum(np.abs(x) - t, 0)
+
+del np, la

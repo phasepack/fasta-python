@@ -4,9 +4,9 @@ __author__ = "Noah Singer"
 
 
 def functionize(A):
-    """Check if an object A is a function. If it's not, return a function wrapping A.
+    """Make an object A into an operator (represented as a function by Python).
 
-    :param A: an object (possibly already a function).
+    :param A: an object (possibly already a function)
     :return: a function returning A, if it's not a function.
     """
 

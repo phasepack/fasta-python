@@ -10,23 +10,23 @@ MMV(X) = sum_i ||X_i||,
 
 where X_i denotes the ith row of X."""
 
-__author__ = "Noah Singer"
-
 import numpy as np
 from numpy import linalg as la
 from fasta import fasta, tests, proximal, plots
+
+__author__ = "Noah Singer"
 
 
 def mmv(A, At, B, mu, X0, **kwargs):
     """Solve the multiple measurement vector (MMV) problem.
 
-    :param A: A matrix or function handle.
-    :param At: The transpose of A.
-    :param B: A matrix of measurements.
-    :param mu: A parameter controlling the regularization.
-    :param X0: An initial guess for the solution.
-    :param kwargs: Options for the FASTA solver.
-    :return: The output of the FASTA solver on the problem.
+    :param A: A matrix or function handle
+    :param At: The transpose of A
+    :param B: A matrix of measurements
+    :param mu: A parameter controlling the regularization
+    :param X0: An initial guess for the solution
+    :param kwargs: Options for the FASTA solver
+    :return: The problem's computed solution and the full output of the FASTA solver on the problem
     """
     f = lambda Z: .5 * la.norm((Z-B).ravel())**2
     gradf = lambda Z: Z-B
@@ -45,23 +45,16 @@ def mmv(A, At, B, mu, X0, **kwargs):
     return X.solution, X
 
 
-def test():
-    # Number of measurements
-    M = 20
+def test(M=20, N=30, L=10, K=7, sigma=0.1, mu=1.0):
+    """Construct a sample max-norm problem by creating a two-moons segmentation dataset, converting it to a weighted graph, and then performing max-norm regularization on its adjacency matrix.
 
-    # Dimension of sparse signal
-    N = 30
-    L = 10
-
-    # Signal sparsity
-    K = 7
-
-    # Regularization parameter
-    mu = 1
-
-    # Noise level in b
-    sigma = 0.1
-
+    :param M: The number of measurements (default: 20)
+    :param N: The number of rows in the sparse matrix (default: 30)
+    :param L: The number of columns in the sparse matrix (default: 10)
+    :param K: The signal sparsity (default: 7)
+    :param sigma: The noise level in the measurement vector (default: 0.1)
+    :param mu: The regularization parameter (default: 1.0)
+    """
     # Create sparse signal
     X = np.zeros((N, L))
     X[np.random.permutation(N)[:K],] = np.random.randn(K, L)
@@ -78,9 +71,9 @@ def test():
     print("Constructed MMV problem.")
 
     # Test the three different algorithms
-    plain, adaptive, accelerated = tests.test_modes(lambda **k: mmv(A, A.T, B, mu, X0, **k))
+    adaptive, accelerated, plain = tests.test_modes(lambda **k: mmv(A, A.T, B, mu, X0, **k))
     plots.plot_convergence("Multiple Measurement Vector",
-                           (plain[1], adaptive[1], accelerated[1]), ("Plain", "Adaptive", "Accelerated"))
+                           (adaptive[1], accelerated[1], plain[1]), ("Adaptive", "Accelerated", "Plain"))
 
     # Plot the recovered signal
     plots.plot_matrices("Multiple Measurement Vector Recovery", X, adaptive[0])
@@ -88,3 +81,6 @@ def test():
 
 if __name__ == "__main__":
     test()
+
+del np, la
+del fasta, tests, proximal, plots
