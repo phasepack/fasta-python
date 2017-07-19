@@ -9,12 +9,30 @@ where X_i denotes the ith row of X."""
 
 import numpy as np
 from numpy import linalg as la
-from fasta import fasta, tests, proximal, plots
+from fasta import fasta, proximal, plots
+from fasta.examples import ExampleProblem, test_modes
 
 __author__ = "Noah Singer"
 
 __all__ = ["mmv", "test"]
 
+class MMVProblem(ExampleProblem):
+    def __init__(self, A, At, B, mu, X=None):
+        """Create a multiple-measurement vector problem.
+
+        :param A: The measurement operator (must be linear, often simply a matrix)
+        :param At: The Hermitian adjoint operator of A (for real matrices A, just the transpose)
+        :param B: The observation matrix
+        :param mu: The regularization parameter
+        :param X: The problem's true solution, if known (default: None)
+        """
+        super(ExampleProblem, self).__init__()
+
+        self.A = A
+        self.At = At
+        self.B = B
+        self.mu = mu
+        self.X = X
 
 def mmv(A, At, B, mu, X0, **kwargs):
     """Solve the multiple measurement vector (MMV) problem.

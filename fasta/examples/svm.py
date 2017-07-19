@@ -13,10 +13,24 @@ maximum-margin classifier. The problem is solved by formulating the dual problem
 import numpy as np
 from numpy import linalg as la
 from matplotlib import pyplot as plt
-from fasta import fasta, tests, proximal, plots
+from fasta import fasta, plots
+from fasta.examples import ExampleProblem, test_modes
 
 __author__ = "Noah Singer"
 
+class SVMProblem(ExampleProblem):
+    def __init__(self, D, L, C):
+        """Create an instance of the SVM classification problem.
+
+        :param D: The data matrix
+        :param L: A diagonal matrix of labels for the data
+        :param C: The regularizatin parameter
+        """
+        super(ExampleProblem, self).__init__()
+
+        self.D = D
+        self.L = L
+        self.C = C
 
 def svm(D, L, C, y0, **kwargs):
     """Solve the support vector machine problem.

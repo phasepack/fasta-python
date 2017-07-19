@@ -6,11 +6,26 @@
 
 import numpy as np
 from numpy import linalg as la
-from fasta import fasta, tests, proximal, plots
+from fasta import fasta, proximal, plots
+from fasta.examples import ExampleProblem, test_modes
 
 __author__ = "Noah Singer"
 
 __all__ = ["logistic_matrix_completion", "test"]
+
+
+class LogisticMatrixCompletionProblem(ExampleProblem):
+    def __init__(self, B, mu, X=None):
+        """Create an instance of the logistic matrix completion problem.
+        :param B: The observation matrix
+        :param mu: The regularization parameter
+        :param X: The true value of the unknown matrix, if known (default: None)
+        """
+        super(ExampleProblem, self).__init__()
+
+        self.B = B
+        self.mu = mu
+        self.X = X
 
 def logistic_matrix_completion(B, mu, X0, **kwargs):
     """Solve the 1-bit matrix completion problem.

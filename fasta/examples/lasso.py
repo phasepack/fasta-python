@@ -9,20 +9,20 @@ from fasta.examples import ExampleProblem, test_modes
 
 __author__ = "Noah Singer"
 
-__all__ = ["lasso", "test"]
+__all__ = ["LASSOProblem"]
 
 
-#TODO: document return values
+# TODO: document return values
 
 class LASSOProblem(ExampleProblem):
     def __init__(self, A, At, b, mu, x=None):
-        """Instantiate an instance of the LASSO problem.
+        """Create an instance of the LASSO problem.
 
-        :param A: A matrix or function handle
-        :param At: The transpose of A
-        :param b: A measurement vector
-        :param mu: A parameter controlling the regularization
-        :param x: The true solution to the problem, if known (default: None)
+        :param A: The measurement operator (must be linear, often simply a matrix)
+        :param At: The Hermitian adjoint operator of A (for real matrices A, just the transpose)
+        :param b: The observation vector
+        :param mu: The regularization parameter
+        :param x: The true value of the unknown signal, if known (default: None)
         """
         super(ExampleProblem, self).__init__()
 
@@ -85,6 +85,7 @@ class LASSOProblem(ExampleProblem):
 
 if __name__ == "__main__":
     problem, x0 = LASSOProblem.construct()
+    print("Constructed LASSO problem.")
 
     adaptive, accelerated, plain = test_modes(problem, x0)
 

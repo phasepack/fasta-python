@@ -2,11 +2,28 @@
 
 import numpy as np
 from numpy import linalg as la
-from fasta import fasta, tests, proximal, plots
+from fasta import fasta, plots
+from fasta.examples import ExampleProblem, test_modes
 
 __author__ = "Noah Singer"
 
 __all__ = ["non_negative_least_squares", "test"]
+
+class NNLeastSquaresProblem(ExampleProblem):
+    def __init__(self, A, At, b, x):
+        """Create an instance of the non-negative least squares problem.
+
+        :param A: The measurement operator (must be linear, often simply a matrix)
+        :param At: The Hermitian adjoint operator of A (for real matrices A, just the tranpose)
+        :param b: The observation vector
+        :param x: The true value of the unknown signal, if known (default: None)
+        """
+        super(ExampleProblem, self).__init__()
+
+        self.A = A
+        self.At = At
+        self.b = b
+        self.x = x
 
 
 def non_negative_least_squares(A, At, b, x0, **kwargs):

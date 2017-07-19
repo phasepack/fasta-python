@@ -12,7 +12,8 @@ This is accomplished by forming the dual problem,
 import numpy as np
 from numpy import linalg as la
 from scipy.misc import ascent
-from fasta import fasta, tests, proximal, plots
+from fasta import fasta, plots
+from fasta.examples import ExampleProblem, test_modes
 
 __author__ = "Noah Singer"
 
@@ -57,6 +58,21 @@ def div(X):
         divergence += np.roll(dX, -1, axis=dim) - dX
 
     return divergence
+
+
+class TVDenoisingProblem(ExampleProblem):
+    def __init__(self, M, mu):
+        """Create an instance of the total variation denoising problem.
+
+        :param M: A noisy image
+        :param mu: The regularization parameter
+        """
+        super(ExampleProblem, self).__init__()
+
+        self.M = M
+        self.mu = mu
+
+
 
 
 def total_variation(M, mu, Y0, **kwargs):

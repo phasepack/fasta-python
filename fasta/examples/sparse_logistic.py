@@ -8,12 +8,30 @@ where z_i and b_i are the ith rows of z and b, respectively."""
 
 import numpy as np
 from numpy import linalg as la
-from fasta import fasta, tests, proximal, plots
+from fasta import fasta, proximal, plots
+from fasta.examples import ExampleProblem, test_modes
 
 __author__ = "Noah Singer"
 
 __all__ = ["sparse_logistic", "test"]
 
+class SparseLogisticProblem(ExampleProblem):
+    def __init__(self, A, At, b, mu, x):
+        """Create an instance of the sparse logistic least squares problem.
+
+        :param A: The measurement operator (must be linear, often simply a matrix)
+        :param At: The Hermitian adjoint operator of A (for real matrices A, just the transpose)
+        :param b: The observation vector
+        :param mu: The regularization parameter
+        :param x: The true value of the unknown signal, if known (default: None)
+        """
+        super(ExampleProblem, self).__init__()
+
+        self.A = A
+        self.At = At
+        self.b = b
+        self.mu = mu
+        self.x = x
 
 def sparse_logistic(A, At, b, mu, x0, **kwargs):
     """Solve the L1-penalized logistic least squares problem.

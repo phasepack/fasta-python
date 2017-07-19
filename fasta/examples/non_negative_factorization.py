@@ -4,12 +4,28 @@ This problem is non-convex, but FBS is still often effective."""
 
 import numpy as np
 from numpy import linalg as la
-from fasta import fasta, tests, proximal, plots
+from fasta import fasta, proximal, plots
+from fasta.examples import ExampleProblem, test_modes
 
 __author__ = "Noah Singer"
 
 __all__ = ["non_negative_factorization", "test"]
 
+class NNFactorizationProblem():
+    def __init__(self, S, mu, X=None, Y=None):
+        """Create an instance of the non-negative factorization problem.
+
+        :param S: The matrix to factorize
+        :param mu: The regularization parameter
+        :param X: The matrix's true first factor, if known (default: None)
+        :param Y: The matrix's true second factor, if known (default: None)
+        """
+        super(ExampleProblem, self).__init__()
+
+        self.S = S
+        self.mu = mu
+        self.X = X
+        self.Y = Y
 
 def non_negative_factorization(S, mu, X0, Y0, **kwargs):
     """Solve the L1-penalized non-negative matrix factorization problem.

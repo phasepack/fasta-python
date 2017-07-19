@@ -8,12 +8,24 @@ import numpy as np
 from numpy import linalg as la
 from matplotlib import pyplot as plt
 from scipy.spatial.distance import pdist, squareform
-from fasta import fasta, tests, proximal, plots
+from fasta import fasta, plots
+from fasta.examples import ExampleProblem, test_modes
 
 __author__ = "Noah Singer"
 
 __all__ = ["max_norm", "test"]
 
+class MaxNormProblem(ExampleProblem):
+    def __init__(self, S, mu):
+        """Create an instance the max-norm problem.
+
+        :param S: A square matrix
+        :param mu: The regularization parameter
+        """
+        super(ExampleProblem, self).__init__()
+
+        self.S = S
+        self.mu = mu
 
 def max_norm(S, mu, X0, **kwargs):
     """Solve the max-norm problem.
