@@ -1,12 +1,9 @@
-"""Solve the multiple measurement vector (MMV) problem,
+"""Solve the multiple measurement vector (MMV) problem, min_X mu*MMV(X) + .5||AX-B||^2, using the FASTA solver.
 
-min_X mu*MMV(X) + .5||AX-B||^2,
+X is a matrix, and so the norm ||AX-B|| is the Frobenius norm. The problem assumes that each column of X has the same
+sparsity pattern, and so the sparsity constraint on X is formulated as,
 
-using the FASTA solver. X is a matrix, and so the norm ||AX-B|| is the Frobenius norm.
-The problem assumes that each column has the same sparsity pattern, and so the sparsity constraint on the matrix X
-is formulated as,
-
-MMV(X) = sum_i ||X_i||,
+    MMV(X) = sum_i ||X_i||,
 
 where X_i denotes the ith row of X."""
 
@@ -15,6 +12,8 @@ from numpy import linalg as la
 from fasta import fasta, tests, proximal, plots
 
 __author__ = "Noah Singer"
+
+__all__ = ["mmv", "test"]
 
 
 def mmv(A, At, B, mu, X0, **kwargs):
@@ -77,10 +76,9 @@ def test(M=20, N=30, L=10, K=7, sigma=0.1, mu=1.0):
 
     # Plot the recovered signal
     plots.plot_matrices("Multiple Measurement Vector Recovery", X, adaptive[0])
-    plots.show_plots()
+
+    return adaptive, accelerated, plain
 
 if __name__ == "__main__":
     test()
-
-del np, la
-del fasta, tests, proximal, plots
+    plots.show_plots()

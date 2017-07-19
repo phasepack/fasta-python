@@ -1,13 +1,13 @@
-"""Solve the support vector machine problem,
+"""Solve the support vector machine problem, min_w ||w||^2 + C*h(Dw,L), using the FASTA solver.
 
-min_w ||w||^2 + C*h(Dw,L),
+The hinge loss function, h, is defined as,
 
-where the hinge loss function, h, is defined as,
+    h(Z,L) = sum_i max(1 - l_i * z_i),
 
-h(Z,L) = sum_i max(1 - l_i * z_i),
+where l_i and z_i are the ith rows of Z and L, respectively. The norm of w is minimized in order to promote a
+maximum-margin classifier. The problem is solved by formulating the dual problem,
 
-where l_i and z_i are the ith rows of Z and L, respectively.
-The norm of w is minimized in order to promote a maximum-margin classifier.
+    min_y .5*||D^T L y||^2 - sum(y).
 """
 
 import numpy as np
@@ -72,6 +72,7 @@ def test(M=1000, N=15, C=0.01):
     w = adaptive[0]
     accuracy = np.sum(np.sign(D @ w) == L) / M
 
+    # Plot a histogram of the residuals
     figure, axes = plt.subplots()
     figure.suptitle("Support Vector Machine (Accuracy: {}%)".format(accuracy * 100))
 
@@ -81,10 +82,8 @@ def test(M=1000, N=15, C=0.01):
     axes.hist((D[positive] @ w, D[negative] @ w), 25, label=("Positive", "Negative"))
     axes.legend()
 
-    plots.show_plots()
+    return adaptive, accelerated, plain
 
 if __name__ == "__main__":
     test()
-
-del np, la, plt
-del fasta, tests, proximal, plots
+    plots.show_plots()

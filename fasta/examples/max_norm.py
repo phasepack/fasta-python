@@ -1,9 +1,7 @@
-"""Solve the max-norm problem,
+"""Solve the max-norm problem, min_X <S, X X^T>, ||X||_{2,inf}^2 <= 1 using the FASTA solver.
 
-min_X <S, X X^T>, ||X||_{2,inf}^2 <= 1
-
-using the FASTA solver. The NP-complete max-cut problem can be relaxed into this form.
-The inequality constrains the maximum L2-norm of any row of X.
+The NP-complete max-cut problem can be relaxed into this form. The inequality constrains the maximum L2-norm of any row
+of X.
 """
 
 import numpy as np
@@ -13,6 +11,8 @@ from scipy.spatial.distance import pdist, squareform
 from fasta import fasta, tests, proximal, plots
 
 __author__ = "Noah Singer"
+
+__all__ = ["max_norm", "test"]
 
 
 def max_norm(S, mu, X0, **kwargs):
@@ -61,7 +61,7 @@ def test(N=2000, D=2, sigma=0.1, noise=0.15, dx=(1, 0.5), delta=0.01, K=10, mu=1
     points[:,1] = np.sin(theta)
 
     # Separate out the top moon
-    points[:N//2,:2] -= s
+    points[:N//2,:2] -= dx
 
     # Add noise
     points += noise * np.random.randn(N, D)
@@ -94,12 +94,8 @@ def test(N=2000, D=2, sigma=0.1, noise=0.15, dx=(1, 0.5), delta=0.01, K=10, mu=1
     axes.plot(points[labels<0,0], points[labels<0,1], 'b.')
     axes.plot(points[labels>0,0], points[labels>0,1], 'r.')
 
-    plots.show_plots()
+    return adaptive, accelerated, plain
 
 if __name__ == "__main__":
     test()
-
-
-del np, la, plt
-del pdist, squareform
-del fasta, tests, proximal, plots
+    plots.show_plots()

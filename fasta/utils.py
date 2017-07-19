@@ -7,9 +7,8 @@ def functionize(A):
     """Make an object A into an operator (represented as a function by Python).
 
     :param A: an object (possibly already a function)
-    :return: a function returning A, if it's not a function.
+    :return: a function returning A, if it's not a function
     """
-
     if A is None:
         # A is simply the identity
         return lambda x: x

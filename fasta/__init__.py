@@ -1,7 +1,9 @@
-"""A Python implementation of Goldstein et. al's Fast Adaptive Shrinkage/Thresholding Algorithm.
+"""A Python implementation of Goldstein et. al's Fast Adaptive Shrinkage/Thresholding Algorithm for convex optimization.
 
-FASTA minimizes a function expressed in the form
-        min h(x) = f(Ax) + g(x)
+FASTA minimizes a function expressed in the form,
+
+    min h(x) = f(Ax) + g(x),
+
 where `f` is convex and differentiable and `g` is convex.
 `g` may be non-differentiable, or possibly not even finite-valued, so normal gradient descent methods cannot be used.
 
@@ -12,16 +14,19 @@ minimum value of `g` while not straying too far from `z`.
 
 The FASTA algorithm incorporates various improvements to FBS, as detailed in (Goldstein et al. 2016), including
 adaptive stepsize selection, acceleration, non-monotone backtracking line search,
-and a variety of stopping conditions.
+and a variety of stopping conditions. Additionally, included in this pacakage are eleven different example problems that
+are solved using FASTA.
 """
 
 import numpy as np
 from numpy import linalg as la
 from time import time
 
-from . import plots, proximal, stopping, tests, utils
+from . import plots, proximal, stopping, utils
 
 __author__ = "Noah Singer"
+
+__all__ = ["fasta"]
 
 EPSILON = 1E-12
 
@@ -41,7 +46,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
           L=None,
           tau0=None,
 
-          backtrack=False,
+          backtrack=True,
           stepsize_shrink=None,
           window=10,
           max_backtracks=20,
@@ -236,7 +241,9 @@ def fasta(A, At, f, gradf, g, proxg, x0,
             # Prevent alpha from growing too large by restarting the acceleration
             if restart and (x0 - x1).ravel().T @ (x1 - x_accel0).ravel() > 1E-30:
                 alpha0 = 1.0
-                print("Restarted acceleration.")
+
+                if verbose:
+                    print("Restarted acceleration.")
 
             # Recalculate acceleration parameter
             alpha1 = (1 + np.sqrt(1 + 4 * alpha0**2)) / 2
@@ -340,4 +347,3 @@ def fasta(A, At, f, gradf, g, proxg, x0,
 
     return type('FASTAResult', (object,), result)
 
-del np, la, time

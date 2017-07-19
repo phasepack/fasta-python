@@ -1,14 +1,12 @@
-"""Solve the L1-penalized least squares problem (also known as basis pursuit denoising, or BPDN),
-
-min_x mu||x||_1 + .5||Ax-b||^2,
-
-using the FASTA solver."""
+"""Solve the L1-penalized least squares problem (also known as basis pursuit denoising, or BPDN), min_x mu||x||_1 + .5||Ax-b||^2, using the FASTA solver."""
 
 import numpy as np
 from numpy import linalg as la
 from fasta import fasta, tests, proximal, plots
 
 __author__ = "Noah Singer"
+
+__all__ = ["sparse_least_squares", "test"]
 
 
 def sparse_least_squares(A, At, b, mu, x0, **kwargs):
@@ -64,10 +62,9 @@ def test(M=200, N=1000, K=10, sigma=0.01, mu=0.02):
 
     # Plot the recovered signal
     plots.plot_signals("Sparse Least Squares Regression", x, adaptive[0])
-    plots.show_plots()
+
+    return adaptive, accelerated, plain
 
 if __name__ == "__main__":
     test()
-
-del np, la
-del fasta, tests, proximal, plots
+    plots.show_plots()

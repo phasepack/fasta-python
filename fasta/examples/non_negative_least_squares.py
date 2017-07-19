@@ -1,14 +1,12 @@
-"""Solve the non-negative least squares problem,
-
-min_x .5||Ax-b||^2, x >= 0
-
-using the FASTA solver."""
+"""Solve the non-negative least squares problem, min_x .5||Ax-b||^2, x >= 0, using the FASTA solver."""
 
 import numpy as np
 from numpy import linalg as la
 from fasta import fasta, tests, proximal, plots
 
 __author__ = "Noah Singer"
+
+__all__ = ["non_negative_least_squares", "test"]
 
 
 def non_negative_least_squares(A, At, b, x0, **kwargs):
@@ -62,10 +60,9 @@ def test(M=200, N=1000, K=10, sigma=0.005):
 
     # Plot the recovered signal
     plots.plot_signals("Non-Negative Least Squares Regression", x, adaptive[0])
-    plots.show_plots()
+
+    return adaptive, accelerated, plain
 
 if __name__ == "__main__":
     test()
-
-del np, la
-del fasta, tests, proximal, plots
+    plots.show_plots()

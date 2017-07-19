@@ -1,14 +1,12 @@
-"""Solve the total-variation denoising problem,
+"""Solve the total-variation denoising problem, min_X mu*TV(X) + .5*||X-M||^2, using the FASTA solver.
 
-min_X mu*TV(X) + .5*||X-M||^2,
+M is a noisy image and TV(X) represents the total-variation seminorm,
 
-using the FASTA solver, where M is a noisy image and TV(X) represents the total-variation seminorm,
-
-TV(X) = sum_ij sqrt( (X_{i+1,j} - X_{i,j})^2 + (X_{i,j+1} - X_{i,j})^2 ).
+    TV(X) = sum_ij sqrt( (X_{i+1,j} - X_{i,j})^2 + (X_{i,j+1} - X_{i,j})^2 ).
 
 This is accomplished by forming the dual problem,
 
-min_Y ||div(grad(Y)) - M/mu||^2.
+    min_Y ||div(grad(Y)) - M/mu||^2.
 """
 
 import numpy as np
@@ -18,10 +16,16 @@ from fasta import fasta, tests, proximal, plots
 
 __author__ = "Noah Singer"
 
+__all__ = ["grad", "div", "total_variation", "test"]
+
 
 def grad(X):
     """The gradient operator on an N-dimensional array, returning an (N+1)-dimensional array, where the
-    (N+1)st dimension contains N entries, each representing the gradient in one direction."""
+    (N+1)st dimension contains N entries, each representing the gradient in one direction.
+
+    :param X: An N-dimensional array.
+    :return: An (N+1)-dimensional array representing the discrete gradient of X.
+    """
     # Allocate memory for gradient
     gradient = np.zeros(X.shape + (X.ndim,))
 
@@ -33,8 +37,12 @@ def grad(X):
 
 
 def div(X):
-    """The divergence operator on an N-dimensional array, returning an (N-1)-dimensional array. It performs
-    backwards differences and sums the differences, acting as the adjoint operator to the gradient."""
+    """The divergence operator on an N-dimensional array, returning an (N-1)-dimensional array. It computes
+    backwards differences and sums those differences, acting as the adjoint operator to the gradient.
+
+    :param X: An N-dimensional array.
+    :return: An (N-1)-dimensional array representing the discrete divergence of X.
+    """
     N = X.shape[-1]
     assert N == X.ndim-1
 
@@ -59,7 +67,6 @@ def total_variation(M, mu, Y0, **kwargs):
     :param Y0: An initial guess for the gradient of the solution
     :return: The problem's computed solution and the full output of the FASTA solver on the problem.
     """
-
     f = lambda Z: .5 * la.norm((Z - M/mu).ravel())**2
     gradf = lambda Z: Z - M/mu
     g = lambda Y: 0
@@ -107,11 +114,9 @@ def test(sigma=0.05, mu=0.01):
 
     # Plot the recovered signal
     plots.plot_matrices("Total Variation Denoising", M, adaptive[0])
-    plots.show_plots()
+
+    return adaptive, accelerated, plain
 
 if __name__ == "__main__":
     test()
-
-del np, la
-del ascent
-del fasta, tests, proximal, plots
+    plots.show_plots()

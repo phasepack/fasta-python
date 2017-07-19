@@ -1,11 +1,8 @@
-"""Solve the 1-bit matrix completion problem,
+"""Solve the 1-bit matrix completion problem, min_X mu||X||* + logit(X,B), using the FASTA solver.
 
-min_X mu||X||* + logit(X,B),
+||-||* denotes the sparsity-inducing nuclear norm, and the logistic log-odds function is defined as,
 
-using the FASTA solver, where ||-||* denotes the sparsity-inducing nuclear norm, and
-the logistic log-odds function is defined as,
-
-logit(Z,B) = sum_ij log(1 + e^(Z_ij)) - B_ij * Z_ij."""
+    logit(Z,B) = sum_ij log(1 + e^(Z_ij)) - B_ij * Z_ij."""
 
 import numpy as np
 from numpy import linalg as la
@@ -13,6 +10,7 @@ from fasta import fasta, tests, proximal, plots
 
 __author__ = "Noah Singer"
 
+__all__ = ["logistic_matrix_completion", "test"]
 
 def logistic_matrix_completion(B, mu, X0, **kwargs):
     """Solve the 1-bit matrix completion problem.
@@ -30,10 +28,10 @@ def logistic_matrix_completion(B, mu, X0, **kwargs):
 
     X = fasta(None, None, f, gradf, g, proxg, X0, **kwargs)
 
-    return X, X.solution
+    return X.solution, X
 
 
-def test(M=200, N=1000, K=10, mu=20.0):
+def test(M=200, N=1000, K=10, mu=2.0):
     """Construct a sample logistic matrix completion problem by factoring a random matrix, reducing its rank, and then randomly computing a logistic observation vector.
 
     :param M: The number of rows (default: 200)
@@ -68,10 +66,10 @@ def test(M=200, N=1000, K=10, mu=20.0):
 
     # Plot the recovered signal
     plots.plot_matrices("Logistic Matrix Completion", B, adaptive[0])
-    plots.show_plots()
+
+    return adaptive, accelerated, plain
 
 if __name__ == "__main__":
     test()
+    plots.show_plots()
 
-del np, la
-del fasta, tests, proximal, plots

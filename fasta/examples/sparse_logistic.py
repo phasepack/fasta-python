@@ -1,10 +1,8 @@
-"""Solve the L1-penalized logistic least squares problem,
+"""Solve the L1-penalized logistic least squares problem, min mu||x||_1 + logit(Ax,b), using the FASTA solver.
 
-min mu||x||_1 + logit(Ax,b),
+The logistic log-odds function is defined as,
 
-using the FASTA solver, where the logistic log-odds function is defined as,
-
-logic(z,b) = sum_i log(1 + e^(z_i)) - b_i * z_i,
+    logit(z,b) = sum_i log(1 + e^(z_i)) - b_i * z_i,
 
 where z_i and b_i are the ith rows of z and b, respectively."""
 
@@ -13,6 +11,8 @@ from numpy import linalg as la
 from fasta import fasta, tests, proximal, plots
 
 __author__ = "Noah Singer"
+
+__all__ = ["sparse_logistic", "test"]
 
 
 def sparse_logistic(A, At, b, mu, x0, **kwargs):
@@ -67,10 +67,9 @@ def test(M=1000, N=2000, K=5, mu=40):
 
     # Plot the recovered signal
     plots.plot_signals("Sparse Logistic Regression", x, adaptive[0])
-    plots.show_plots()
+
+    return adaptive, accelerated, plain
 
 if __name__ == "__main__":
     test()
-
-del np, la
-del fasta, tests, proximal, plots
+    plots.show_plots()

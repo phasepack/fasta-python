@@ -5,6 +5,8 @@ from numpy import linalg as la
 
 __author__ = "Noah Singer"
 
+__all__ = ["project_Linf_ball", "project_L1_ball", "project_Lnuc_ball", "shrink"]
+
 
 def project_Linf_ball(x, t):
     """Project a vector onto an L-inf ball of radius t."""
@@ -37,7 +39,7 @@ def project_Lnuc_ball(X, t):
 
     U, s, V = la.svd(X)
 
-    # Construct the diagonal matrix, S, as a shrunken version of the original diagonal
+    # Construct the diagonal matrix of singular values, S, as a shrunken version of the original signal values
     S = np.zeros(X.shape)
     S[:len(s),:len(s)] = np.diag(shrink(s, t))
     return U @ S @ V
@@ -47,5 +49,3 @@ def shrink(x, t):
     """The vector shrink operator, which is also the proximal operator for the L1-norm."""
 
     return np.sign(x) * np.maximum(np.abs(x) - t, 0)
-
-del np, la

@@ -1,14 +1,14 @@
-"""Solve the L1-penalized non-negative matrix factorization problem,
+"""Solve the L1-penalized non-negative matrix factorization problem, min_{X,Y} mu||X||_1 + ||S - XY^T||, X >= 0, Y >= 0, ||Y||_inf <= 1, using the FASTA solver.
 
-min_{X,Y} mu||X||_1 + ||S - XY^T||, X >= 0, Y >= 0, ||Y||_inf <= 1
-
-using the FASTA solver. This problem is non-convex, but FBS is still often effective."""
+This problem is non-convex, but FBS is still often effective."""
 
 import numpy as np
 from numpy import linalg as la
 from fasta import fasta, tests, proximal, plots
 
 __author__ = "Noah Singer"
+
+__all__ = ["non_negative_factorization", "test"]
 
 
 def non_negative_factorization(S, mu, X0, Y0, **kwargs):
@@ -77,13 +77,12 @@ def test(M=800, N=200, K=10, b=0.75, sigma=0.1, mu=1.0):
     plots.plot_convergence("Non-Negative Matrix Factorization",
                            (adaptive[1], accelerated[1], plain[1]), ("Adaptive", "Accelerated", "Plain"))
 
-    # Plot the recovered signal
+    # Plot the recovered matrices
     plots.plot_matrices("Factor X", X, adaptive[0][0])
     plots.plot_matrices("Factor Y", Y, adaptive[0][1])
-    plots.show_plots()
+
+    return adaptive, accelerated, plain
 
 if __name__ == "__main__":
     test()
-
-del np, la
-del fasta, tests, proximal, plots
+    plots.show_plots()

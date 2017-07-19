@@ -5,6 +5,8 @@ from matplotlib import pyplot as plt
 
 __author__ = "Noah Singer"
 
+__all__ = ["plot_convergence", "plot_signals", "plot_matrices", "show_plots"]
+
 
 def plot_convergence(title, solvers, labels):
     """Plot the convergence curves of various solvers."""
@@ -74,5 +76,3 @@ def show_plots():
     """Display all plots."""
 
     plt.show()
-
-del np, plt

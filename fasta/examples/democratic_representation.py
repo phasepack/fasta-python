@@ -1,8 +1,6 @@
-"""Solve the democratic representation problem (L-inf-penalized least squares),
+"""Solve the democratic representation problem (L-inf-penalized least squares), min_x mu||x||_inf + .5||Ax-b||^2, using the FASTA solver.
 
-min_x mu||x||_inf + .5||Ax-b||^2,
-
-using the FASTA solver. The solver promotes a solution with low dynamic range."""
+The solver promotes a solution with low dynamic range."""
 
 import numpy as np
 from numpy import linalg as la
@@ -10,6 +8,8 @@ from scipy.fftpack import dct, idct
 from fasta import fasta, tests, proximal, plots
 
 __author__ = "Noah Singer"
+
+__all__ = ["democratic_representation", "test"]
 
 
 def democratic_representation(A, At, b, mu, x0, **kwargs):
@@ -73,11 +73,9 @@ def test(M=500, N=1000, mu=300.0):
 
     # Plot the recovered signal
     plots.plot_signals("Democratic Representation", b, adaptive[0])
-    plots.show_plots()
+
+    return adaptive, accelerated, plain
 
 if __name__ == "__main__":
     test()
-
-del np, la
-del dct, idct
-del fasta, tests, proximal, plots
+    plots.show_plots()
