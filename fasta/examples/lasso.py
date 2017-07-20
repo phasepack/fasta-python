@@ -5,7 +5,7 @@ The problem is re-expressed with a characteristic function function for the cons
 import numpy as np
 from numpy import linalg as la
 from fasta import fasta, proximal, plots
-from fasta.examples import ExampleProblem, test_modes
+from fasta.examples import ExampleProblem, test_modes, NO_ARGS
 
 __author__ = "Noah Singer"
 
@@ -61,7 +61,7 @@ class LASSOProblem(ExampleProblem):
 
         return LASSOProblem(A, A.T, b, mu, x=x), x0
 
-    def solve(self, x0, fasta_options=None):
+    def solve(self, x0, fasta_options=NO_ARGS):
         """Solve the LASSO regression problem with FASTA.
 
         :param x0: An initial guess for the solution
@@ -71,9 +71,6 @@ class LASSOProblem(ExampleProblem):
         gradf = lambda z: z - self.b
         g = lambda x: 0  # TODO: add an extra condition to this
         proxg = lambda x, t: proximal.project_L1_ball(x, self.mu)
-
-        if not fasta_options:
-            fasta_options = {}
 
         x = fasta(self.A, self.At, f, gradf, g, proxg, x0, **fasta_options)
 

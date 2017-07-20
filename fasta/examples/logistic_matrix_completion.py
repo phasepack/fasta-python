@@ -7,7 +7,7 @@
 import numpy as np
 from numpy import linalg as la
 from fasta import fasta, proximal, plots
-from fasta.examples import ExampleProblem, test_modes
+from fasta.examples import ExampleProblem, test_modes, NO_ARGS
 
 __author__ = "Noah Singer"
 
@@ -17,6 +17,7 @@ __all__ = ["logistic_matrix_completion", "test"]
 class LogisticMatrixCompletionProblem(ExampleProblem):
     def __init__(self, B, mu, X=None):
         """Create an instance of the logistic matrix completion problem.
+
         :param B: The observation matrix
         :param mu: The regularization parameter
         :param X: The true value of the unknown matrix, if known (default: None)
@@ -27,64 +28,60 @@ class LogisticMatrixCompletionProblem(ExampleProblem):
         self.mu = mu
         self.X = X
 
-def logistic_matrix_completion(B, mu, X0, **kwargs):
-    """Solve the 1-bit matrix completion problem.
+        sio.savemat("lmc.mat", {'B': B, 'X': X})
 
-    :param B: A matrix of measurements
-    :param mu: A parameter controlling the regularization
-    :param X0: An initial guess for the solution
-    :param kwargs: Options for the FASTA solver
-    :return: The problem's computed solution and the full output of the FASTA solver on the problem
-    """
-    f = lambda Z: np.sum(np.log(1 + np.exp(Z)) - (B==1) * Z)
-    gradf = lambda Z: -B / (1 + np.exp(B * Z))
-    g = lambda X: mu * la.norm(np.diag(la.svd(X)[1]), 1)
-    proxg = lambda X, t: proximal.project_Lnuc_ball(X, t*mu)
+    @staticmethod
+    def construct(M=200, N=1000, K=10, mu=20.0):
+        """Construct a sample logistic matrix completion problem by factoring a random matrix, reducing its rank, and then randomly computing a logistic observation vector.
 
-    X = fasta(None, None, f, gradf, g, proxg, X0, **kwargs)
+        :param M: The number of rows (default: 200)
+        :param N: The number of columns (default: 1000)
+        :param K: The rank of the reduced matrix (default: 10)
+        :param mu: The regularization parameter (default: 20.0)
+        """
+        # Create matrix and SVD factor it
+        X = np.random.randn(M, N) * 10.0
+        U, s, V = la.svd(X)
 
-    return X.solution, X
+        # Reduce the rank of X to K by only taking the first K singular values
+        S = np.zeros((M, N))
+        S[:K, :K] = np.diag(s[:K])
+        X = U @ S @ V
 
+        # Create observation matrix
+        P = 1 / (1 + np.exp(-X))
+        B = 2.0 * (np.random.rand(M, N) < P) - 1
 
-def test(M=200, N=1000, K=10, mu=2.0):
-    """Construct a sample logistic matrix completion problem by factoring a random matrix, reducing its rank, and then randomly computing a logistic observation vector.
+        # Initial iterate
+        X0 = np.zeros((M, N))
 
-    :param M: The number of rows (default: 200)
-    :param N: The number of columns (default: 1000)
-    :param K: The rank of the reduced matrix (default: 10)
-    :param mu: The regularization parameter (default: 20.0)
-    """
-    # Create matrix and SVD factor it
-    A = np.random.randn(M, N)
-    U, s, V = la.svd(A)
+        return LogisticMatrixCompletionProblem(B, mu, X=B), X0
 
-    # Reduce the rank of s to K
-    S = np.zeros((M, N))
-    S[:K, :K] = np.diag(s[:K])
+    def solve(self, X0, fasta_options=NO_ARGS):
+        """Solve the 1-bit logistic matrix completion problem with FASTA.
 
-    # Reconstruct the matrix A, now with rank K
-    A = U @ S @ V
+        :param X0: An initial guess for the solution
+        :param fasta_options: Additional options for the FASTA algorithm (default: None)"""
+        f = lambda Z: np.sum(np.log(1 + np.exp(Z)) - (self.B == 1) * Z)
+        gradf = lambda Z: -self.B / (1 + np.exp(self.B * Z))
+        g = lambda X: self.mu * la.norm(np.diag(la.svd(X)[1]), 1)
+        proxg = lambda X, t: proximal.project_Lnuc_ball(X, t * self.mu)
 
-    # Create observation vector
-    P = 1 / (1 + np.exp(-A))
-    B = 2.0 * (np.random.rand(M, N) < P) - 1
+        X = fasta(None, None, f, gradf, g, proxg, X0, **fasta_options)
 
-    # Initial iterate
-    X0 = np.zeros((M, N))
+        return X.solution, X
 
-    print("Constructed logistic matrix completion problem.")
+    def plot(self, solution):
+        plots.plot_matrices("Logistic Matrix Completion", self.X, solution)
 
-    # Test the three different algorithms
-    adaptive, accelerated, plain = tests.test_modes(lambda **k: logistic_matrix_completion(B, mu, X0, **k))
-    plots.plot_convergence("Logistic Matrix Completion",
-                           (adaptive[1], accelerated[1], plain[1]), ("Adaptive", "Accelerated", "Plain"))
-
-    # Plot the recovered signal
-    plots.plot_matrices("Logistic Matrix Completion", B, adaptive[0])
-
-    return adaptive, accelerated, plain
 
 if __name__ == "__main__":
-    test()
+    problem, X0 = LogisticMatrixCompletionProblem.construct()
+    print("Constructed 1-bit logistic matrix completion problem.")
+
+    adaptive, accelerated, plain = test_modes(problem, X0)
+
+    plots.plot_convergence("Logistic Matrix Completion", (adaptive[1], accelerated[1], plain[1]), ("Adaptive", "Accelerated", "Plain"))
+    problem.plot(adaptive[0])
     plots.show_plots()
 

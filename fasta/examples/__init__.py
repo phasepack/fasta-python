@@ -2,7 +2,12 @@
 
 from abc import ABCMeta, abstractclassmethod, abstractstaticmethod
 
+from types import MappingProxyType
+
+
 TOLERANCE = 1E-3
+
+NO_ARGS = MappingProxyType({})
 
 
 class ExampleProblem(metaclass=ABCMeta):
@@ -11,7 +16,7 @@ class ExampleProblem(metaclass=ABCMeta):
         pass
 
     @abstractclassmethod
-    def solve(self, initial_guess, fasta_options={ }):
+    def solve(self, initial_guess, fasta_options=NO_ARGS):
         pass
 
     @abstractclassmethod

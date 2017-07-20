@@ -10,11 +10,13 @@ where X_i denotes the ith row of X."""
 import numpy as np
 from numpy import linalg as la
 from fasta import fasta, proximal, plots
-from fasta.examples import ExampleProblem, test_modes
+from fasta.examples import ExampleProblem, test_modes, NO_ARGS
+from scipy import io as sio
 
 __author__ = "Noah Singer"
 
 __all__ = ["mmv", "test"]
+
 
 class MMVProblem(ExampleProblem):
     def __init__(self, A, At, B, mu, X=None):
@@ -34,69 +36,66 @@ class MMVProblem(ExampleProblem):
         self.mu = mu
         self.X = X
 
-def mmv(A, At, B, mu, X0, **kwargs):
-    """Solve the multiple measurement vector (MMV) problem.
+        sio.savemat("mmv.mat",{'A': A, 'B': B, 'X': X})
 
-    :param A: A matrix or function handle
-    :param At: The transpose of A
-    :param B: A matrix of measurements
-    :param mu: A parameter controlling the regularization
-    :param X0: An initial guess for the solution
-    :param kwargs: Options for the FASTA solver
-    :return: The problem's computed solution and the full output of the FASTA solver on the problem
-    """
-    f = lambda Z: .5 * la.norm((Z-B).ravel())**2
-    gradf = lambda Z: Z-B
-    g = lambda X: mu * np.sum(np.sqrt(np.sum(X*X, axis=1)))
+    @staticmethod
+    def construct(M=20, N=30, L=10, K=7, sigma=0.1, mu=1.0):
+        """Construct a sample max-norm problem by creating a two-moons segmentation dataset, converting it to a weighted graph, and then performing max-norm regularization on its adjacency matrix.
 
-    def proxg(X, t):
-        norms = la.norm(X, axis=1)
+        :param M: The number of measurements (default: 20)
+        :param N: The number of rows in the sparse matrix (default: 30)
+        :param L: The number of columns in the sparse matrix (default: 10)
+        :param K: The signal sparsity (default: 7)
+        :param sigma: The noise level in the measurement vector (default: 0.1)
+        :param mu: The regularization parameter (default: 1.0)
+        """
+        # Create sparse signal
+        X = np.zeros((N, L))
+        X[np.random.permutation(N)[:K],] = np.random.randn(K, L)
 
-        # Shrink the norms, and ensure we don't divide by zero
-        scale = proximal.shrink(norms, t) / (norms + (norms == 0))
+        # Create matrix
+        A = np.random.randn(M, N)
 
-        return X * scale[:,np.newaxis]
+        # Create noisy observation matrix
+        B = A @ X + sigma * np.random.randn(M, L)
 
-    X = fasta(A, At, f, gradf, g, proxg, X0, **kwargs)
+        # Initial iterate
+        X0 = np.zeros((N, L))
 
-    return X.solution, X
+        return MMVProblem(A, A.T, B, mu, X=X), X0
 
+    def solve(self, X0, fasta_options=NO_ARGS):
+        """Solve the multiple measurement vector (MMV) problem.
 
-def test(M=20, N=30, L=10, K=7, sigma=0.1, mu=1.0):
-    """Construct a sample max-norm problem by creating a two-moons segmentation dataset, converting it to a weighted graph, and then performing max-norm regularization on its adjacency matrix.
+        :param X0: An initial guess for the solution
+        :param fasta_options: Additional options for the FASTA algorithm (default: None)
+        """
+        f = lambda Z: .5 * la.norm((Z - self.B).ravel())**2
+        gradf = lambda Z: Z - self.B
+        g = lambda X: self.mu * np.sum(np.sqrt(np.sum(X * X, axis=1)))
 
-    :param M: The number of measurements (default: 20)
-    :param N: The number of rows in the sparse matrix (default: 30)
-    :param L: The number of columns in the sparse matrix (default: 10)
-    :param K: The signal sparsity (default: 7)
-    :param sigma: The noise level in the measurement vector (default: 0.1)
-    :param mu: The regularization parameter (default: 1.0)
-    """
-    # Create sparse signal
-    X = np.zeros((N, L))
-    X[np.random.permutation(N)[:K],] = np.random.randn(K, L)
+        def proxg(X, t):
+            norms = la.norm(X, axis=1)
 
-    # Create matrix
-    A = np.random.randn(M, N)
+            # Shrink the norms, and ensure we don't divide by zero
+            scale = proximal.shrink(norms, t) / (norms + (norms == 0))
 
-    # Create noisy observation matrix
-    B = A @ X + sigma * np.random.randn(M, L)
+            return X * scale[:,np.newaxis]
 
-    # Initial iterate
-    X0 = np.zeros((N, L))
+        X = fasta(self.A, self.At, f, gradf, g, proxg, X0, **fasta_options)
 
-    print("Constructed MMV problem.")
+        return X.solution, X
 
-    # Test the three different algorithms
-    adaptive, accelerated, plain = tests.test_modes(lambda **k: mmv(A, A.T, B, mu, X0, **k))
-    plots.plot_convergence("Multiple Measurement Vector",
-                           (adaptive[1], accelerated[1], plain[1]), ("Adaptive", "Accelerated", "Plain"))
+    def plot(self, solution):
+        plots.plot_matrices("MMV", self.X, solution)
 
-    # Plot the recovered signal
-    plots.plot_matrices("Multiple Measurement Vector Recovery", X, adaptive[0])
-
-    return adaptive, accelerated, plain
 
 if __name__ == "__main__":
-    test()
+    problem, x0 = MMVProblem.construct()
+    print("Constructed MMV problem.")
+
+    adaptive, accelerated, plain = test_modes(problem, x0)
+
+    plots.plot_convergence("MMV", (adaptive[1], accelerated[1], plain[1]), ("Adaptive", "Accelerated", "Plain"))
+    problem.plot(adaptive[0])
     plots.show_plots()

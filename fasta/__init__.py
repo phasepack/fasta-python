@@ -125,6 +125,8 @@ def fasta(A, At, f, gradf, g, proxg, x0,
     else:
         L = 1 / tau0
 
+    print(tau0)
+
     if verbose:
         print("Initializing FASTA...\n")
         print("Iteration #\tResidual\tTau\tAlpha\tBacktracks\tObjective")
@@ -211,7 +213,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
                     and backtrack_count < max_backtracks:
                 # We've gone too far, so shrink the stepsize and try FBS again (be twice as aggressive for
                 # adaptive stepsize selection)
-                tau0 *= stepsize_shrink / (2.5 if adaptive else 1)
+                tau0 *= stepsize_shrink
 
                 # Redo the FBS step
                 x1hat = x0 - tau0 * gradf0
