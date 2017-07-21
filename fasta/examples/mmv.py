@@ -11,7 +11,6 @@ import numpy as np
 from numpy import linalg as la
 from fasta import fasta, proximal, plots
 from fasta.examples import ExampleProblem, test_modes, NO_ARGS
-from scipy import io as sio
 
 __author__ = "Noah Singer"
 
@@ -35,8 +34,6 @@ class MMVProblem(ExampleProblem):
         self.B = B
         self.mu = mu
         self.X = X
-
-        sio.savemat("mmv.mat",{'A': A, 'B': B, 'X': X})
 
     @staticmethod
     def construct(M=20, N=30, L=10, K=7, sigma=0.1, mu=1.0):
@@ -74,13 +71,15 @@ class MMVProblem(ExampleProblem):
         gradf = lambda Z: Z - self.B
         g = lambda X: self.mu * np.sum(np.sqrt(np.sum(X * X, axis=1)))
 
-        def proxg(X, t):
+        def prox_mmv(X, t):
             norms = la.norm(X, axis=1)
 
             # Shrink the norms, and ensure we don't divide by zero
             scale = proximal.shrink(norms, t) / (norms + (norms == 0))
 
             return X * scale[:,np.newaxis]
+
+        proxg = lambda X, t: prox_mmv(X, self.mu * t)
 
         X = fasta(self.A, self.At, f, gradf, g, proxg, X0, **fasta_options)
 

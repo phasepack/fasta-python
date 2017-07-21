@@ -125,8 +125,6 @@ def fasta(A, At, f, gradf, g, proxg, x0,
     else:
         L = 1 / tau0
 
-    print(tau0)
-
     if verbose:
         print("Initializing FASTA...\n")
         print("Iteration #\tResidual\tTau\tAlpha\tBacktracks\tObjective")
@@ -204,9 +202,9 @@ def fasta(A, At, f, gradf, g, proxg, x0,
 
         # Non-monotone backtracking line search, used to guarantee convergence and balance out adaptive search if
         # stepsizes grow too large
-        if backtrack:
+        if backtrack and i > 0:
             # Find the maximum of the last `window` values of f
-            M = np.max(f_hist[max(i-window, 0):max(i, 1)])
+            M = np.max(f_hist[max(i-window+1, 1):max(i+1, 2)])
 
             # Check if the quadratic approximation of f is an upper bound; if it's not, FBS isn't guaranteed to converge
             while f1 - (M + np.real(Dx.ravel().T @ gradf0.ravel()) + la.norm(Dx.ravel())**2 / (2 * tau0)) > EPSILON \
