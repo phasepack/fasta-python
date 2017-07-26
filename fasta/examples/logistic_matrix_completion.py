@@ -6,12 +6,14 @@
 
 import numpy as np
 from numpy import linalg as la
+from matplotlib import pyplot as plt
+
 from fasta import fasta, proximal, plots
 from fasta.examples import ExampleProblem, test_modes, NO_ARGS
 
 __author__ = "Noah Singer"
 
-__all__ = ["logistic_matrix_completion", "test"]
+__all__ = ["LogisticMatrixCompletionProblem"]
 
 
 class LogisticMatrixCompletionProblem(ExampleProblem):
@@ -27,8 +29,6 @@ class LogisticMatrixCompletionProblem(ExampleProblem):
         self.B = B
         self.mu = mu
         self.X = X
-
-        sio.savemat("lmc.mat", {'B': B, 'X': X})
 
     @staticmethod
     def construct(M=200, N=1000, K=10, mu=20.0):
@@ -65,7 +65,7 @@ class LogisticMatrixCompletionProblem(ExampleProblem):
         f = lambda Z: np.sum(np.log(1 + np.exp(Z)) - (self.B == 1) * Z)
         gradf = lambda Z: -self.B / (1 + np.exp(self.B * Z))
         g = lambda X: self.mu * la.norm(np.diag(la.svd(X)[1]), 1)
-        proxg = lambda X, t: proximal.project_Lnuc_ball(X, t * self.mu)
+        proxg = lambda X, t: proximal.project_Lnuc_ball(X, t*self.mu)
 
         X = fasta(None, None, f, gradf, g, proxg, X0, **fasta_options)
 
@@ -83,5 +83,4 @@ if __name__ == "__main__":
 
     plots.plot_convergence("Logistic Matrix Completion", (adaptive[1], accelerated[1], plain[1]), ("Adaptive", "Accelerated", "Plain"))
     problem.plot(adaptive[0])
-    plots.show_plots()
-
+    plt.show()

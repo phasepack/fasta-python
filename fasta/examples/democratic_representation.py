@@ -5,23 +5,24 @@ The solver promotes a solution with low dynamic range."""
 import numpy as np
 from numpy import linalg as la
 from scipy.fftpack import dct, idct
+from matplotlib import pyplot as plt
+
 from fasta import fasta, proximal, plots
-from fasta.examples import ExampleProblem, test_modes
+from fasta.examples import ExampleProblem, test_modes, NO_ARGS
 
 __author__ = "Noah Singer"
 
-__all__ = ["democratic_representation", "test"]
+__all__ = ["DemocraticRepresentationProblem"]
 
 
 class DemocraticRepresentationProblem(ExampleProblem):
-    def __init__(self, A, At, b, mu, x=None):
+    def __init__(self, A, At, b, mu):
         """Instantiate an instance of the democratic representation problem.
 
         :param A: A matrix or function handle
         :param At: The transpose of A
         :param b: A measurement vector
         :param mu: A parameter controlling the regularization
-        :param x: The problem's true solution, if known (default: None)
         """
         super(ExampleProblem, self).__init__()
 
@@ -29,7 +30,6 @@ class DemocraticRepresentationProblem(ExampleProblem):
         self.At = At
         self.b = b
         self.mu = mu
-        self.x = x
 
     @staticmethod
     def construct(M=500, N=1000, mu=300.0):
@@ -63,8 +63,37 @@ class DemocraticRepresentationProblem(ExampleProblem):
         # Initial iterate
         x0 = np.zeros(N)
 
-        return DemocraticRepresentationProblem(A, At, b, mu, x=x), x0
+        return DemocraticRepresentationProblem(A, At, b, mu), x0
+
+    def solve(self, x0, fasta_options=NO_ARGS):
+        """Solve the democratic representation problem.
+        :param A: A matrix or function handle.
+        :param At: The transpose of A.
+        :param b: A measurement vector.
+        :param mu: A parameter controlling the regularization.
+        :param x0: An initial guess for the solution.
+        :param kwargs: Options for the FASTA solver.
+        :return: The output of the FASTA solver on the problem.
+        """
+        f = lambda z: .5 * la.norm((z - self.b).ravel()) ** 2
+        gradf = lambda z: z - self.b
+        g = lambda x: self.mu * la.norm(x, np.inf)
+        proxg = lambda x, t: proximal.project_Linf_ball(x, t*self.mu)
+
+        x = fasta(self.A, self.At, f, gradf, g, proxg, x0, **fasta_options)
+
+        return x.solution, x
+
+    def plot(self, solution):
+        plots.plot_signals("Democratic Representation", self.b, solution)
+
 
 if __name__ == "__main__":
-    test()
-    plots.show_plots()
+    problem, x0 = DemocraticRepresentationProblem.construct()
+    print("Constructed democratic representation problem.")
+
+    adaptive, accelerated, plain = test_modes(problem, x0)
+
+    plots.plot_convergence("Democratic Representation", (adaptive[1], accelerated[1], plain[1]), ("Adaptive", "Accelerated", "Plain"))
+    problem.plot(adaptive[0])
+    plt.show()

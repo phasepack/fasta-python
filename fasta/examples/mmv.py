@@ -9,12 +9,14 @@ where X_i denotes the ith row of X."""
 
 import numpy as np
 from numpy import linalg as la
+from matplotlib import pyplot as plt
+
 from fasta import fasta, proximal, plots
 from fasta.examples import ExampleProblem, test_modes, NO_ARGS
 
 __author__ = "Noah Singer"
 
-__all__ = ["mmv", "test"]
+__all__ = ["MMVProblem"]
 
 
 class MMVProblem(ExampleProblem):
@@ -97,4 +99,4 @@ if __name__ == "__main__":
 
     plots.plot_convergence("MMV", (adaptive[1], accelerated[1], plain[1]), ("Adaptive", "Accelerated", "Plain"))
     problem.plot(adaptive[0])
-    plots.show_plots()
+    plt.show()

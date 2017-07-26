@@ -17,10 +17,10 @@ def plot_convergence(title, solvers, labels):
     # Plot the normalized residuals
     residuals.set_xlabel("Iteration #")
     residuals.set_ylabel("log(norm residual)")
-    residuals.set_title("Normalized Residuals")
+    residuals.set_title("Residuals")
 
     for solver, label in zip(solvers, labels):
-        residuals.plot(np.log(solver.norm_residuals[:solver.iteration_count]), label=label)
+        residuals.plot(np.log(solver.residuals[:solver.iteration_count]), label=label)
 
     residuals.legend()
 
@@ -70,9 +70,3 @@ def plot_matrices(title, original, recovered):
 
     original_axes.set_aspect(original.shape[1] / original.shape[0])
     recovered_axes.set_aspect(recovered.shape[1] / recovered.shape[0])
-
-
-def show_plots():
-    """Display all plots."""
-
-    plt.show()

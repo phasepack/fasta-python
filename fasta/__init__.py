@@ -37,7 +37,7 @@ EPSILON = 1E-12
 def fasta(A, At, f, gradf, g, proxg, x0,
           adaptive=True,
           accelerate=False,
-          verbose=False,
+          verbose=True,
 
           max_iters=1000,
           tolerance=1E-5,
@@ -127,7 +127,7 @@ def fasta(A, At, f, gradf, g, proxg, x0,
 
     if verbose:
         print("Initializing FASTA...\n")
-        print("Iteration #\tResidual\tTau\tAlpha\tBacktracks\tObjective")
+        print("Iteration #\tResidual\tStepsize\tAccel. param\tBacktracks\tObjective")
 
     # Allocate memory for convergence information
     residual_hist = np.zeros(max_iters)
@@ -221,8 +221,6 @@ def fasta(A, At, f, gradf, g, proxg, x0,
                 z1 = A(x1)
                 f1 = f(z1)
                 Dx = x1 - x0
-
-                print("backtrack", i)
 
                 backtrack_count += 1
 

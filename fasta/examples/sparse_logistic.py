@@ -8,12 +8,15 @@ where z_i and b_i are the ith rows of z and b, respectively."""
 
 import numpy as np
 from numpy import linalg as la
+from matplotlib import pyplot as plt
+
 from fasta import fasta, proximal, plots
-from fasta.examples import ExampleProblem, test_modes
+from fasta.examples import ExampleProblem, test_modes, NO_ARGS
 
 __author__ = "Noah Singer"
 
-__all__ = ["sparse_logistic", "test"]
+__all__ = ["SparseLogisticProblem"]
+
 
 class SparseLogisticProblem(ExampleProblem):
     def __init__(self, A, At, b, mu, x):
@@ -33,61 +36,56 @@ class SparseLogisticProblem(ExampleProblem):
         self.mu = mu
         self.x = x
 
-def sparse_logistic(A, At, b, mu, x0, **kwargs):
-    """Solve the L1-penalized logistic least squares problem.
+    @staticmethod
+    def construct(M=1000, N=2000, K=5, mu=40):
+        """Construct a sample sparse logistic least squares problem with a random sparse signal and measurement matrix.
 
-    :param A: A matrix or function handle
-    :param At: The transpose of A
-    :param b: A measurement vector
-    :param mu: A parameter controlling the regularization
-    :param x0: An initial guess for the solution
-    :param kwargs: Options for the FASTA solver
-    :return: The problem's computed solution and the full output of the FASTA solver on the problem.
-    """
-    f = lambda z: np.sum(np.log(1 + np.exp(z)) - (b==1) * z)
-    gradf = lambda z: -b / (1 + np.exp(b * z))
-    g = lambda x: mu * la.norm(x.ravel(), 1)
-    proxg = lambda x, t: proximal.shrink(x, t*mu)
+        :param M: The number of measurements (default: 1000)
+        :param N: The dimension of the sparse signal (default: 2000)
+        :param K: The signal sparsity (default: 5)
+        :param mu: The regularization parameter (default: 40.0)
+        """
+        # Create sparse signal
+        x = np.zeros(N)
+        x[np.random.permutation(N)[:K]] = 1
 
-    x = fasta(A, At, f, gradf, g, proxg, x0, **kwargs)
+        # Create matrix
+        A = np.random.randn(M, N)
 
-    return x.solution, x
+        # Create observation vector
+        p = 1 / (1 + np.exp(-A @ x))
+        b = 2.0 * (np.random.rand(M) < p) - 1
 
+        # Initial iterate
+        x0 = np.zeros(N)
 
-def test(M=1000, N=2000, K=5, mu=40):
-    """Construct a sample sparse logistic least squares problem with a random sparse signal and measurement matrix.
+        return SparseLogisticProblem(A, A.T, b, mu, x=x), x0
 
-    :param M: The number of measurements (default: 1000)
-    :param N: The dimension of the sparse signal (default: 2000)
-    :param K: The signal sparsity (default: 5)
-    :param mu: The regularization parameter (default: 40.0)
-    """
-    # Create sparse signal
-    x = np.zeros(N)
-    x[np.random.permutation(N)[:K]] = 1
+    def solve(self, x0, fasta_options=NO_ARGS):
+        """Solve the L1-penalized logistic least squares problem.
 
-    # Create matrix
-    A = np.random.randn(M, N)
+        :param x0: An initial guess for the solution
+        :param fasta_options: Additional options for the FASTA algorithm (default: None)
+        """
+        f = lambda z: np.sum(np.log(1 + np.exp(z)) - (self.b==1) * z)
+        gradf = lambda z: -self.b / (1 + np.exp(self.b * z))
+        g = lambda x: self.mu * la.norm(x.ravel(), 1)
+        proxg = lambda x, t: proximal.shrink(x, t*self.mu)
 
-    # Create observation vector
-    p = 1 / (1 + np.exp(-A @ x))
-    b = 2.0 * (np.random.rand(M) < p) - 1
+        x = fasta(self.A, self.At, f, gradf, g, proxg, x0, **fasta_options)
 
-    # Initial iterate
-    x0 = np.zeros(N)
+        return x.solution, x
 
-    print("Constructed sparse logistic least-squares problem.")
+    def plot(self, solution):
+        plots.plot_signals("Sparse Logistic Least Squares", self.x, solution)
 
-    # Test the three different algorithms
-    adaptive, accelerated, plain = tests.test_modes(lambda **k: sparse_logistic(A, A.T, b, mu, x0, **k))
-    plots.plot_convergence("Sparse Logistic Least Squares",
-                           (adaptive[1], accelerated[1], plain[1]), ("Adaptive", "Accelerated", "Plain"))
-
-    # Plot the recovered signal
-    plots.plot_signals("Sparse Logistic Regression", x, adaptive[0])
-
-    return adaptive, accelerated, plain
 
 if __name__ == "__main__":
-    test()
-    plots.show_plots()
+    problem, x0 = SparseLogisticProblem.construct()
+    print("Constructed sparse logistic least squares problem.")
+
+    adaptive, accelerated, plain = test_modes(problem, x0)
+
+    plots.plot_convergence("Sparse Logistic Least Squares", (adaptive[1], accelerated[1], plain[1]), ("Adaptive", "Accelerated", "Plain"))
+    problem.plot(adaptive[0])
+    plt.show()

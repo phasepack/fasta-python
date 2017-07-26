@@ -4,6 +4,8 @@ The problem is re-expressed with a characteristic function function for the cons
 
 import numpy as np
 from numpy import linalg as la
+from matplotlib import pyplot as plt
+
 from fasta import fasta, proximal, plots
 from fasta.examples import ExampleProblem, test_modes, NO_ARGS
 
@@ -88,5 +90,4 @@ if __name__ == "__main__":
 
     plots.plot_convergence("LASSO", (adaptive[1], accelerated[1], plain[1]), ("Adaptive", "Accelerated", "Plain"))
     problem.plot(adaptive[0])
-    plots.show_plots()
-
+    plt.show()

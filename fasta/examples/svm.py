@@ -13,51 +13,17 @@ maximum-margin classifier. The problem is solved by formulating the dual problem
 import numpy as np
 from numpy import linalg as la
 from matplotlib import pyplot as plt
+
 from fasta import fasta, plots
-from fasta.examples import ExampleProblem, test_modes
+from fasta.examples import ExampleProblem, test_modes, NO_ARGS
 
 __author__ = "Noah Singer"
 
-class SVMProblem(ExampleProblem):
-    def __init__(self, D, L, C):
-        """Create an instance of the SVM classification problem.
-
-        :param D: The data matrix
-        :param L: A diagonal matrix of labels for the data
-        :param C: The regularizatin parameter
-        """
-        super(ExampleProblem, self).__init__()
-
-        self.D = D
-        self.L = L
-        self.C = C
-
-def svm(D, L, C, y0, **kwargs):
-    """Solve the support vector machine problem.
-
-    :param D: The data matrix
-    :param L: A vector of labels for the data
-    :param Y0: An initial guess for the dual variable
-    :return: The problem's computed solution and the full output of the FASTA solver on the problem.
-    """
-    f = lambda y: .5*la.norm((D.T @ (L * y)).ravel())**2 - np.sum(y)
-    gradf = lambda y: L * (D @ (D.T @ (L * y))) - 1
-    g = lambda y: 0
-    proxg = lambda y, t: np.minimum(np.maximum(y, 0), C)
-
-    # Solve dual problem
-    y = fasta(None, None, f, gradf, g, proxg, y0, **kwargs)
-
-    return D.T @ (L * y.solution), y
+__all__ = ["generate", "SVMProblem"]
 
 
-def test(M=1000, N=15, C=0.01):
-    """Construct random linearly separable, labeled sample data for the SVM solver to classify.
-
-    :param M: The number of observation vectors (default: 1000)
-    :param N: The number of observed features per vector (default: 15)
-    :param C: The regularization parameter (default: 0.01)
-    """
+def generate(M, N, w):
+    """Generate linearly separable data."""
     # Mask representing (+) and (-) labels
     permutation = np.random.permutation(M)
     negative = permutation[:M // 2]
@@ -65,39 +31,95 @@ def test(M=1000, N=15, C=0.01):
 
     # Generate linearly separable data
     D = 2 * np.random.randn(M, N)
-    D[negative] -= 1.0
-    D[positive] += 1.0
+    D[negative] -= w
+    D[positive] += w
 
     # Generate labels
     L = np.zeros(M)
     L[negative] -= 1.0
     L[positive] += 1.0
 
-    # Initial iterate
-    y0 = np.zeros(M)
+    return D, L
 
-    print("Constructed support vector machine problem.")
 
-    # Test the three different algorithms
-    adaptive, accelerated, plain = tests.test_modes(lambda **k: svm(D, L, C, y0, **k))
-    plots.plot_convergence("Support Vector Machine",
-                           (adaptive[1], accelerated[1], plain[1]), ("Adaptive", "Accelerated", "Plain"))
+class SVMProblem(ExampleProblem):
+    def __init__(self, D, L, C, w=None):
+        """Create an instance of the SVM classification problem.
 
-    w = adaptive[0]
-    accuracy = np.sum(np.sign(D @ w) == L) / M
+        :param D: The data matrix
+        :param L: A diagonal matrix of labels for the data
+        :param C: The regularization parameter
+        """
+        super(ExampleProblem, self).__init__()
 
-    # Plot a histogram of the residuals
-    figure, axes = plt.subplots()
-    figure.suptitle("Support Vector Machine (Accuracy: {}%)".format(accuracy * 100))
+        self.D = D
+        self.L = L
+        self.C = C
+        self.w = w
+    
+    @staticmethod
+    def construct(M=1000, N=15, C=0.01, separation=1.0):
+        """Construct random linearly separable, labeled sample training data for the SVM solver to train on.
 
-    axes.set_xlabel("Predicted value")
-    axes.set_ylabel("Frequency")
+        :param M: The number of observation vectors (default: 1000)
+        :param N: The number of observed features per vector (default: 15)
+        :param C: The regularization parameter (default: 0.01)
+        :param separation: The distance to move the data from the generated hyperplane (default: 1.0)
+        """
+        # Hyperplane separating the data
+        w = np.random.randn(N)
+        w /= la.norm(w)
+        w *= separation
 
-    axes.hist((D[positive] @ w, D[negative] @ w), 25, label=("Positive", "Negative"))
-    axes.legend()
+        D, L = generate(M, N, w)
 
-    return adaptive, accelerated, plain
+        # Initial iterate
+        y0 = np.zeros(M)
+
+        return SVMProblem(D, L, C, w=w), y0
+
+    def solve(self, y0, fasta_options=NO_ARGS):
+        """Solve the support vector machine problem.
+
+        :param Y0: An initial guess for the dual variable
+        :param fasta_options: Additional options for the FASTA algorithm (default: None)
+        """
+        f = lambda y: .5*la.norm((self.D.T @ (self.L * y)).ravel())**2 - np.sum(y)
+        gradf = lambda y: self.L * (self.D @ (self.D.T @ (self.L * y))) - 1
+        g = lambda y: 0
+        proxg = lambda y, t: np.minimum(np.maximum(y, 0), self.C)
+
+        # Solve dual problem
+        y = fasta(None, None, f, gradf, g, proxg, y0, **fasta_options)
+
+        x = self.D.T @ (self.L * y.solution)
+
+        return x, y
+
+    def plot(self, solution, M_train=300, hist_size=25):
+        N = solution.shape[0]
+        D_train, L_train = generate(M_train, N, self.w)
+
+        accuracy = np.sum(np.sign(D_train @ solution) == L_train) / M_train
+
+        # Plot a histogram of the residuals
+        figure, axes = plt.subplots()
+        figure.suptitle("Support Vector Machine (Accuracy: {}%)".format(accuracy * 100))
+
+        axes.set_xlabel("Predicted value")
+        axes.set_ylabel("Frequency")
+
+        axes.hist((D_train[L_train == 1] @ solution, D_train[L_train == -1] @ solution),
+                  hist_size, label=("Positive", "Negative"))
+        axes.legend()
+
 
 if __name__ == "__main__":
-    test()
-    plots.show_plots()
+    problem, y0 = SVMProblem.construct()
+    print("Constructed support vector machine problem.")
+
+    adaptive, accelerated, plain = test_modes(problem, y0)
+
+    plots.plot_convergence("Support Vector Machine", (adaptive[1], accelerated[1], plain[1]), ("Adaptive", "Accelerated", "Plain"))
+    problem.plot(adaptive[0])
+    plt.show()
