@@ -5,7 +5,7 @@ from numpy import linalg as la
 from matplotlib import pyplot as plt
 
 from fasta import fasta, plots
-from fasta.examples import ExampleProblem, test_modes, NO_ARGS
+from fasta.examples import ExampleProblem, test_modes
 
 __author__ = "Noah Singer"
 
@@ -36,6 +36,7 @@ class NNLeastSquaresProblem(ExampleProblem):
         :param N: The dimension of the sparse signal (default: 1000)
         :param K: The signal sparsity (default: 10)
         :param sigma: The noise level in the observation vector (default: 0.005)
+        :return: An example of this type of problem and a good initial guess for its solution
         """
         # Create sparse signal
         x = np.zeros(N)
@@ -53,18 +54,19 @@ class NNLeastSquaresProblem(ExampleProblem):
 
         return NNLeastSquaresProblem(A, A.T, b, x=x), x0
 
-    def solve(self, x0, fasta_options=NO_ARGS):
+    def solve(self, x0, fasta_options=None):
         """Solve the non-negative least squares problem.
 
         :param x0: An initial guess for the solution
-        :param fasta_options: Additional options for the FASTA algorithm (default: None)
+        :param fasta_options: Options for the FASTA algorithm (default: None)
+        :return: The problem's computed solution and convergence information on FASTA
         """
         f = lambda z: .5 * la.norm((z - self.b).ravel())**2
         gradf = lambda z: z - self.b
         g = lambda x: 0
         proxg = lambda x, t: np.maximum(x, 0)
 
-        x = fasta(self.A, self.At, f, gradf, g, proxg, x0, **fasta_options)
+        x = fasta(self.A, self.At, f, gradf, g, proxg, x0, **(fasta_options or {}))
 
         return x.solution, x
 
@@ -78,6 +80,6 @@ if __name__ == "__main__":
 
     adaptive, accelerated, plain = test_modes(problem, x0)
 
-    plots.plot_convergence("Non-Negative Least Squares", (adaptive[1], accelerated[1], plain[1]), ("Adaptive", "Accelerated", "Plain"))
+    plots.plot_convergence("Non-Negative Least Squares", [adaptive[1], accelerated[1], plain[1]], ["Adaptive", "Accelerated", "Plain"])
     problem.plot(adaptive[0])
     plt.show()

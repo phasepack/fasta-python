@@ -6,11 +6,12 @@ of X.
 
 import numpy as np
 from numpy import linalg as la
-from matplotlib import pyplot as plt
-
 from scipy.spatial.distance import pdist, squareform
+from matplotlib import pyplot as plt
+from typing import Tuple
+
 from fasta import fasta, plots
-from fasta.examples import ExampleProblem, test_modes, NO_ARGS
+from fasta.examples import ExampleProblem, test_modes
 
 __author__ = "Noah Singer"
 
@@ -47,6 +48,7 @@ class MaxNormProblem(ExampleProblem):
         :param dx: The separation between the two moons in the x and y directions (default: (1, 0.5))
         :param K: The maximum allowed rank of the factorization (default: 10)
         :param mu: The regularization parameter (default: 1.0)
+        :return: An example of this type of problem and a good initial guess for its solution
         """
         # Points on a circle
         theta = np.arange(0, N) / N * 2 * np.pi
@@ -67,11 +69,12 @@ class MaxNormProblem(ExampleProblem):
 
         return MaxNormProblem(points, mu), X0
 
-    def solve(self, X0, fasta_options=NO_ARGS):
+    def solve(self, X0, fasta_options=None):
         """Solve the max-norm problem.
 
         :param X0: An initial guess for the gradient of the solution
-        :return: The problem's computed solution and the full output of the FASTA solver on the problem
+        :param fasta_options: Options for the FASTA algorithm (default: None)
+        :return: The problem's computed solution and convergence information on FASTA
         """
         f = lambda X: np.sum(self.S * (X @ X.T))
         gradf = lambda X: (self.S + self.S.T) @ X
@@ -85,7 +88,7 @@ class MaxNormProblem(ExampleProblem):
 
             return self.mu * X / scale[:,np.newaxis]
 
-        X = fasta(None, None, f, gradf, g, proxg, X0, **fasta_options)
+        X = fasta(None, None, f, gradf, g, proxg, X0, **(fasta_options or {}))
 
         return X.solution, X
 
@@ -108,6 +111,6 @@ if __name__ == "__main__":
 
     adaptive, accelerated, plain = test_modes(problem, X0)
 
-    plots.plot_convergence("Max-Norm Problem", (adaptive[1], accelerated[1], plain[1]), ("Adaptive", "Accelerated", "Plain"))
+    plots.plot_convergence("Max-Norm Problem", [adaptive[1], accelerated[1], plain[1]], ["Adaptive", "Accelerated", "Plain"])
     problem.plot(adaptive[0])
     plt.show()

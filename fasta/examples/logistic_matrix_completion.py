@@ -7,9 +7,10 @@
 import numpy as np
 from numpy import linalg as la
 from matplotlib import pyplot as plt
+from typing import Tuple
 
 from fasta import fasta, proximal, plots
-from fasta.examples import ExampleProblem, test_modes, NO_ARGS
+from fasta.examples import ExampleProblem, test_modes
 
 __author__ = "Noah Singer"
 
@@ -38,6 +39,7 @@ class LogisticMatrixCompletionProblem(ExampleProblem):
         :param N: The number of columns (default: 1000)
         :param K: The rank of the reduced matrix (default: 10)
         :param mu: The regularization parameter (default: 20.0)
+        :return: An example of this type of problem and a good initial guess for its solution
         """
         # Create matrix and SVD factor it
         X = np.random.randn(M, N) * 10.0
@@ -57,17 +59,19 @@ class LogisticMatrixCompletionProblem(ExampleProblem):
 
         return LogisticMatrixCompletionProblem(B, mu, X=B), X0
 
-    def solve(self, X0, fasta_options=NO_ARGS):
+    def solve(self, X0, fasta_options=None):
         """Solve the 1-bit logistic matrix completion problem with FASTA.
 
         :param X0: An initial guess for the solution
-        :param fasta_options: Additional options for the FASTA algorithm (default: None)"""
+        :param fasta_options: Options for the FASTA algorithm (default: None)
+        :return: The problem's computed solution and convergence information on FASTA
+        """
         f = lambda Z: np.sum(np.log(1 + np.exp(Z)) - (self.B == 1) * Z)
         gradf = lambda Z: -self.B / (1 + np.exp(self.B * Z))
         g = lambda X: self.mu * la.norm(np.diag(la.svd(X)[1]), 1)
         proxg = lambda X, t: proximal.project_Lnuc_ball(X, t*self.mu)
 
-        X = fasta(None, None, f, gradf, g, proxg, X0, **fasta_options)
+        X = fasta(None, None, f, gradf, g, proxg, X0, **(fasta_options or {}))
 
         return X.solution, X
 
@@ -81,6 +85,6 @@ if __name__ == "__main__":
 
     adaptive, accelerated, plain = test_modes(problem, X0)
 
-    plots.plot_convergence("Logistic Matrix Completion", (adaptive[1], accelerated[1], plain[1]), ("Adaptive", "Accelerated", "Plain"))
+    plots.plot_convergence("Logistic Matrix Completion", [adaptive[1], accelerated[1], plain[1]], ["Adaptive", "Accelerated", "Plain"])
     problem.plot(adaptive[0])
     plt.show()

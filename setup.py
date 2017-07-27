@@ -1,5 +1,7 @@
 from setuptools import setup
 
+install_requires = ["numpy", "scipy", "matplotlib"]
+
 setup(name="fasta",
       version="0.1",
       description="A solver for convex optimization problems",

@@ -8,9 +8,12 @@ __author__ = "Noah Singer"
 __all__ = ["project_Linf_ball", "project_L1_ball", "project_Lnuc_ball", "shrink"]
 
 
-def project_Linf_ball(x, t):
-    """Project a vector onto an L-inf ball of radius t."""
+def project_Linf_ball(x: np.ndarray, t: float):
+    """Project a vector onto an L-inf ball.
 
+    :param x: The vector to project
+    :param t: The radius of the L-inf ball
+    """
     N = len(x)
     xabs = np.abs(x)
 
@@ -27,16 +30,22 @@ def project_Linf_ball(x, t):
         return np.zeros(N)
 
 
-def project_L1_ball(x, t):
-    """Project a vector onto an L1 ball of radius t."""
+def project_L1_ball(x: np.ndarray, t: float):
+    """Project a vector onto an L1 ball.
 
-    # By Moreau's identity, we convert to proximal of conjugate problem (L-inf norm)
+    :param x: The vector to project
+    :param t: The radius of the L1 ball
+    """
+    # By Moreau's identity, we convert to proximal of dual problem (L-inf norm)
     return x - project_Linf_ball(x, t)
 
 
-def project_Lnuc_ball(X, t):
-    """Project a matrix onto a ball induced by the nuclear norm of radius t."""
+def project_Lnuc_ball(X: np.ndarray, t: float):
+    """Project a matrix onto a ball induced by the nuclear norm.
 
+    :param x: The matrix to project
+    :param t: The radius of the L-nuc ball
+    """
     U, s, V = la.svd(X)
 
     # Construct the diagonal matrix of singular values, S, as a shrunken version of the original signal values
@@ -45,7 +54,13 @@ def project_Lnuc_ball(X, t):
     return U @ S @ V
 
 
-def shrink(x, t):
-    """The vector shrink operator, which is also the proximal operator for the L1-norm."""
+def shrink(x: np.ndarray, t: float):
+    """The shrink (soft-thresholding) operator, which is also the proximal operator for the L1-norm.
 
+    The shrink operator reducing the magnitudes of all entries in x by t, leaving them at zero if they're already less
+    than t.
+
+    :param x: The vector to shrink (also could be a matrix)
+    :param t: The amount to shrink by
+    """
     return np.sign(x) * np.maximum(np.abs(x) - t, 0)

@@ -10,9 +10,10 @@ where X_i denotes the ith row of X."""
 import numpy as np
 from numpy import linalg as la
 from matplotlib import pyplot as plt
+from typing import Tuple
 
 from fasta import fasta, proximal, plots
-from fasta.examples import ExampleProblem, test_modes, NO_ARGS
+from fasta.examples import ExampleProblem, test_modes
 
 __author__ = "Noah Singer"
 
@@ -47,6 +48,7 @@ class MMVProblem(ExampleProblem):
         :param K: The signal sparsity (default: 7)
         :param sigma: The noise level in the measurement vector (default: 0.1)
         :param mu: The regularization parameter (default: 1.0)
+        :return: An example of this type of problem and a good initial guess for its solution
         """
         # Create sparse signal
         X = np.zeros((N, L))
@@ -63,11 +65,12 @@ class MMVProblem(ExampleProblem):
 
         return MMVProblem(A, A.T, B, mu, X=X), X0
 
-    def solve(self, X0, fasta_options=NO_ARGS):
+    def solve(self, X0, fasta_options=None):
         """Solve the multiple measurement vector (MMV) problem.
 
         :param X0: An initial guess for the solution
-        :param fasta_options: Additional options for the FASTA algorithm (default: None)
+        :param fasta_options: Options for the FASTA algorithm (default: None)
+        :return: The problem's computed solution and convergence information on FASTA
         """
         f = lambda Z: .5 * la.norm((Z - self.B).ravel())**2
         gradf = lambda Z: Z - self.B
@@ -83,7 +86,7 @@ class MMVProblem(ExampleProblem):
 
         proxg = lambda X, t: prox_mmv(X, self.mu * t)
 
-        X = fasta(self.A, self.At, f, gradf, g, proxg, X0, **fasta_options)
+        X = fasta(self.A, self.At, f, gradf, g, proxg, X0, **(fasta_options or {}))
 
         return X.solution, X
 
@@ -97,6 +100,6 @@ if __name__ == "__main__":
 
     adaptive, accelerated, plain = test_modes(problem, x0)
 
-    plots.plot_convergence("MMV", (adaptive[1], accelerated[1], plain[1]), ("Adaptive", "Accelerated", "Plain"))
+    plots.plot_convergence("MMV", [adaptive[1], accelerated[1], plain[1]], ["Adaptive", "Accelerated", "Plain"])
     problem.plot(adaptive[0])
     plt.show()

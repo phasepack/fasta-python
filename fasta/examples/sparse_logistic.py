@@ -11,7 +11,7 @@ from numpy import linalg as la
 from matplotlib import pyplot as plt
 
 from fasta import fasta, proximal, plots
-from fasta.examples import ExampleProblem, test_modes, NO_ARGS
+from fasta.examples import ExampleProblem, test_modes
 
 __author__ = "Noah Singer"
 
@@ -44,6 +44,7 @@ class SparseLogisticProblem(ExampleProblem):
         :param N: The dimension of the sparse signal (default: 2000)
         :param K: The signal sparsity (default: 5)
         :param mu: The regularization parameter (default: 40.0)
+        :return: An example of this type of problem and a good initial guess for its solution
         """
         # Create sparse signal
         x = np.zeros(N)
@@ -61,18 +62,19 @@ class SparseLogisticProblem(ExampleProblem):
 
         return SparseLogisticProblem(A, A.T, b, mu, x=x), x0
 
-    def solve(self, x0, fasta_options=NO_ARGS):
+    def solve(self, x0, fasta_options=None):
         """Solve the L1-penalized logistic least squares problem.
 
         :param x0: An initial guess for the solution
-        :param fasta_options: Additional options for the FASTA algorithm (default: None)
+        :param fasta_options: Options for the FASTA algorithm (default: None)
+        :return: The problem's computed solution and convergence information on FASTA
         """
         f = lambda z: np.sum(np.log(1 + np.exp(z)) - (self.b==1) * z)
         gradf = lambda z: -self.b / (1 + np.exp(self.b * z))
         g = lambda x: self.mu * la.norm(x.ravel(), 1)
         proxg = lambda x, t: proximal.shrink(x, t*self.mu)
 
-        x = fasta(self.A, self.At, f, gradf, g, proxg, x0, **fasta_options)
+        x = fasta(self.A, self.At, f, gradf, g, proxg, x0, **(fasta_options or {}))
 
         return x.solution, x
 
@@ -86,6 +88,6 @@ if __name__ == "__main__":
 
     adaptive, accelerated, plain = test_modes(problem, x0)
 
-    plots.plot_convergence("Sparse Logistic Least Squares", (adaptive[1], accelerated[1], plain[1]), ("Adaptive", "Accelerated", "Plain"))
+    plots.plot_convergence("Sparse Logistic Least Squares", [adaptive[1], accelerated[1], plain[1]], ["Adaptive", "Accelerated", "Plain"])
     problem.plot(adaptive[0])
     plt.show()

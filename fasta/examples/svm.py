@@ -15,7 +15,7 @@ from numpy import linalg as la
 from matplotlib import pyplot as plt
 
 from fasta import fasta, plots
-from fasta.examples import ExampleProblem, test_modes, NO_ARGS
+from fasta.examples import ExampleProblem, test_modes
 
 __author__ = "Noah Singer"
 
@@ -65,6 +65,7 @@ class SVMProblem(ExampleProblem):
         :param N: The number of observed features per vector (default: 15)
         :param C: The regularization parameter (default: 0.01)
         :param separation: The distance to move the data from the generated hyperplane (default: 1.0)
+        :return: An example of this type of problem and a good initial guess for its solution
         """
         # Hyperplane separating the data
         w = np.random.randn(N)
@@ -78,11 +79,12 @@ class SVMProblem(ExampleProblem):
 
         return SVMProblem(D, L, C, w=w), y0
 
-    def solve(self, y0, fasta_options=NO_ARGS):
+    def solve(self, y0, fasta_options=None):
         """Solve the support vector machine problem.
 
         :param Y0: An initial guess for the dual variable
-        :param fasta_options: Additional options for the FASTA algorithm (default: None)
+        :param fasta_options: Options for the FASTA algorithm (default: None)
+        :return: The problem's computed solution and convergence information on FASTA
         """
         f = lambda y: .5*la.norm((self.D.T @ (self.L * y)).ravel())**2 - np.sum(y)
         gradf = lambda y: self.L * (self.D @ (self.D.T @ (self.L * y))) - 1
@@ -90,7 +92,7 @@ class SVMProblem(ExampleProblem):
         proxg = lambda y, t: np.minimum(np.maximum(y, 0), self.C)
 
         # Solve dual problem
-        y = fasta(None, None, f, gradf, g, proxg, y0, **fasta_options)
+        y = fasta(None, None, f, gradf, g, proxg, y0, **(fasta_options or {}))
 
         x = self.D.T @ (self.L * y.solution)
 
@@ -120,6 +122,6 @@ if __name__ == "__main__":
 
     adaptive, accelerated, plain = test_modes(problem, y0)
 
-    plots.plot_convergence("Support Vector Machine", (adaptive[1], accelerated[1], plain[1]), ("Adaptive", "Accelerated", "Plain"))
+    plots.plot_convergence("Support Vector Machine", [adaptive[1], accelerated[1], plain[1]], ["Adaptive", "Accelerated", "Plain"])
     problem.plot(adaptive[0])
     plt.show()

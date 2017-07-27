@@ -15,7 +15,7 @@ from scipy.misc import ascent
 from matplotlib import pyplot as plt
 
 from fasta import fasta, plots
-from fasta.examples import ExampleProblem, test_modes, NO_ARGS
+from fasta.examples import ExampleProblem, test_modes
 
 __author__ = "Noah Singer"
 
@@ -80,6 +80,7 @@ class TVDenoisingProblem(ExampleProblem):
 
         :param sigma: The noise level in the image (default: 0.1)
         :param mu: The regularization parameter (default: 0.01)
+        :return: An example of this type of problem and a good initial guess for its solution
         """
         # Generate an image
         M = ascent().astype(float)
@@ -95,13 +96,12 @@ class TVDenoisingProblem(ExampleProblem):
 
         return TVDenoisingProblem(M, mu), Y0
 
-    def solve(self, Y0, fasta_options=NO_ARGS):
+    def solve(self, Y0, fasta_options=None):
         """Solve the total variation denoising problem.
 
-        :param M: A noisy image
-        :param mu: A parameter controlling the regularization
         :param Y0: An initial guess for the gradient of the solution
-        :return: The problem's computed solution and the full output of the FASTA solver on the problem.
+        :param fasta_options: Options for the FASTA algorithm (default: None)
+        :return: The problem's computed solution and convergence information on FASTA
         """
         f = lambda Z: .5 * la.norm((Z - self.M/self.mu).ravel())**2
         gradf = lambda Z: Z - self.M/self.mu
@@ -117,7 +117,7 @@ class TVDenoisingProblem(ExampleProblem):
             return Y / norms[...,np.newaxis]
 
         # Solve dual problem
-        Y = fasta(div, grad, f, gradf, g, proxg, Y0, **fasta_options)
+        Y = fasta(div, grad, f, gradf, g, proxg, Y0, **(fasta_options or {}))
 
         X = self.M - self.mu * div(Y.solution)
 
@@ -134,6 +134,6 @@ if __name__ == "__main__":
 
     adaptive, accelerated, plain = test_modes(problem, Y0)
 
-    plots.plot_convergence("Total-Variation Denoising", (adaptive[1], accelerated[1], plain[1]), ("Adaptive", "Accelerated", "Plain"))
+    plots.plot_convergence("Total-Variation Denoising", [adaptive[1], accelerated[1], plain[1]], ["Adaptive", "Accelerated", "Plain"])
     problem.plot(adaptive[0])
     plt.show()

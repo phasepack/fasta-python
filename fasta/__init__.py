@@ -21,41 +21,40 @@ are solved using FASTA.
 import numpy as np
 from numpy import linalg as la
 from time import time
+from typing import Callable
 
 from . import plots, proximal, stopping, utils
 
+
 __author__ = "Noah Singer"
 
-__all__ = ["fasta"]
+__all__ = ["fasta", "Convergence", "LinearOperator"]
 
 EPSILON = 1E-12
+
+# Type hint for linear operators used throughout this package
+LinearOperator = Callable[[np.ndarray], np.ndarray]
 
 
 # TODO: check mutually allowed modes
 # TODO: adjust to allow tensors
 
-def fasta(A, At, f, gradf, g, proxg, x0,
-          adaptive=True,
-          accelerate=False,
-          verbose=True,
+def fasta(A: LinearOperator, At: LinearOperator,
+          f: Callable[[np.ndarray], float], gradf: Callable[[np.ndarray], np.ndarray],
+          g: Callable[[np.ndarray], float], proxg: Callable[[np.ndarray], np.ndarray], x0: np.ndarray,
 
-          max_iters=1000,
-          tolerance=1E-5,
+          adaptive: bool=True, accelerate: bool=False, verbose: bool=True,
 
-          stop_rule=stopping.hybrid_residual,
-          L=None,
-          tau0=None,
+          max_iters: int=1000, tolerance: float=1e-5,
+          stop_rule: Callable[[int, float, float, float, float], bool]=stopping.hybrid_residual,
 
-          backtrack=True,
-          stepsize_shrink=None,
-          window=10,
-          max_backtracks=20,
+          L: float=None, tau0: float=None,
 
-          restart=True,
+          backtrack: bool=True, stepsize_shrink: bool=None, window: int=10, max_backtracks: int=20,
+          restart: bool=True,
 
-          evaluate_objective=False,
-          record_iterates=False,
-          func=None):
+          evaluate_objective: bool=False, record_iterates: bool=False,
+          func: Callable[[np.ndarray], np.ndarray]=None) -> "Convergence":
     """Run the FASTA algorithm.
 
     :param adaptive: Adaptively choose the stepsize by locally approximating the function as a quadratic (default: True)
@@ -89,8 +88,8 @@ def fasta(A, At, f, gradf, g, proxg, x0,
     #   - Variables ending with 1 indicate the current round's values
     #   - Variables ending with _hist indicate a history that is tracked between rounds
 
-    A = utils.functionize(A)
-    At = utils.functionize(At)
+    A = utils.operatorize(A)
+    At = utils.operatorize(At)
 
     # Option to just do gradient descent
     if g is None:
@@ -122,8 +121,6 @@ def fasta(A, At, f, gradf, g, proxg, x0,
 
     if not tau0:
         tau0 = 1 / L
-    else:
-        L = 1 / tau0
 
     if verbose:
         print("Initializing FASTA...\n")
@@ -170,7 +167,8 @@ def fasta(A, At, f, gradf, g, proxg, x0,
     if backtrack:
         total_backtracks = 0
 
-    # Non-monotonicity for stopping conditions
+    # Stopping conditions may be monotonic, so we always want to take the best iterate
+    # Quality is evaluated as lowest objective, when objective is evaluated, or smallest residual, when it's not
     max_residual = -np.inf
     best_quality = np.inf
     best_iterate = x0
@@ -193,7 +191,6 @@ def fasta(A, At, f, gradf, g, proxg, x0,
         x1 = proxg(x1hat, tau0)
 
         Dx = x1 - x0
-
         z1 = A(x1)
         f1 = f(z1)
 
@@ -202,9 +199,9 @@ def fasta(A, At, f, gradf, g, proxg, x0,
 
         # Non-monotone backtracking line search, used to guarantee convergence and balance out adaptive search if
         # stepsizes grow too large
-        if backtrack and i > 0:
+        if backtrack:
             # Find the maximum of the last `window` values of f
-            M = np.max(f_hist[max(i-window+1, 1):max(i+1, 2)])
+            M = np.max(f_hist[max(i-window+1, 0):(i+1)])
 
             # Check if the quadratic approximation of f is an upper bound; if it's not, FBS isn't guaranteed to converge
             while f1 - (M + np.real(Dx.ravel().T @ gradf0.ravel()) + la.norm(Dx.ravel())**2 / (2 * tau0)) > EPSILON \
@@ -218,14 +215,15 @@ def fasta(A, At, f, gradf, g, proxg, x0,
                 x1 = proxg(x1hat, tau0)
 
                 # Recalculate values
+                Dx = x1 - x0
                 z1 = A(x1)
                 f1 = f(z1)
-                Dx = x1 - x0
 
                 backtrack_count += 1
 
             total_backtracks += backtrack_count
 
+        # FISTA-style acceleration, which works well for ill-conditioned problems
         if accelerate:
             # Rename last round's current variables to this round's previous variables
             x_accel0 = x_accel1
@@ -258,15 +256,14 @@ def fasta(A, At, f, gradf, g, proxg, x0,
         tau1 = tau0
 
         # Adaptive adjustments of stepsize using the Barzilai-Borwein method (spectral method), which
-        # approximates the function as a quadratic, for which the ideal stepsize is simply 1/a, and dynamically
-        # select a new stepsize for each iteration
+        # approximates the function as a simple quadratic form, and dynamically selects a stepsize for each iteration
         if adaptive:
             Dg = gradf1 + (x1hat - x0) / tau0
             dotprod = np.real(Dx.ravel().T @ Dg.ravel())
 
-            # Least squares estimate using a
+            # One least squares estimate of the best stepsize
             tau_s = la.norm(Dx.ravel()) ** 2 / dotprod
-            # Least squares estimate using t = 1/a
+            # A different least squares estimate of the best stepsize
             tau_m = max(dotprod / la.norm(Dg.ravel()) ** 2, 0)
 
             # Use an adaptive combination of tau_s and tau_m
@@ -321,27 +318,41 @@ def fasta(A, At, f, gradf, g, proxg, x0,
 
         i += 1
 
+    # Record the time at algorithm stop
     times[i] = time()
 
-    result = {
-        'residuals': residual_hist,
-        'norm_residuals': norm_residual_hist,
-        'stepsizes': tau_hist,
-        'backtracks_count': total_backtracks,
-        'times': times,
-        'iteration_count': i,
-        'solution': best_iterate
-    }
+    return Convergence(residual_hist, norm_residual_hist, tau_hist, total_backtracks, times, i, best_iterate,
+                       objective_hist if evaluate_objective else None,
+                       iterate_hist if record_iterates else None,
+                       function_hist if func else None)
 
-    if evaluate_objective:
-        result['objectives'] = objective_hist
-        result['solution_objective'] = best_quality
 
-    if record_iterates:
-        result['iterates'] = iterate_hist
+class Convergence:
+    """Convergence information about the FASTA algorithm."""
 
-    if func:
-        result['function_hist'] = function_hist
+    def __init__(self, residuals: np.ndarray, norm_residuals: np.ndarray, stepsizes: np.ndarray, backtracks: np.ndarray,
+                 times: np.ndarray, iteration_count: np.ndarray, solution: np.ndarray, objectives: np.ndarray = None,
+                 iterates: np.ndarray = None, function_hist: np.ndarray = None):
+        """Record convergence information about FASTA.
 
-    return type('FASTAResult', (object,), result)
-
+        :param residuals: The residuals, or the size differences between iterates, at each step
+        :param norm_residuals: The normalized residuals at each step
+        :param stepsizes: The stepsizes at each step
+        :param backtracks: The number of backtracks performed at each step
+        :param times: The time after each iteration is completed. The first entry is before the algorithm starts
+        :param iteration_count: The number of iterations until the algorithm converged
+        :param solution: The solution the algorithm computed
+        :param objectives: The value of the objective function at each step (default: None)
+        :param iterates: The
+        :param function_hist:
+        """
+        self.residuals = residuals
+        self.norm_residuals = norm_residuals
+        self.stepsizes = stepsizes
+        self.backtracks = backtracks
+        self.times = times
+        self.iteration_count = iteration_count
+        self.solution = solution
+        self.objectives = objectives
+        self.iterates = iterates
+        self.function_hist = function_hist

@@ -7,7 +7,7 @@ from numpy import linalg as la
 from matplotlib import pyplot as plt
 
 from fasta import fasta, proximal, plots
-from fasta.examples import ExampleProblem, test_modes, NO_ARGS
+from fasta.examples import ExampleProblem, test_modes
 
 __author__ = "Noah Singer"
 
@@ -40,6 +40,7 @@ class NNFactorizationProblem(ExampleProblem):
         :param b: The sparsity parameter for the first factor, X (default: 0.75)
         :param sigma: The noise level in the observation matrix (default: 0.1)
         :param mu: The regularization parameter (default: 1.0)
+        :return: An example of this type of problem and a good initial guess for its solution
         """
         # Create random factor matrices
         X = np.random.rand(M, K)
@@ -57,11 +58,12 @@ class NNFactorizationProblem(ExampleProblem):
 
         return NNFactorizationProblem(S, mu, X=X, Y=Y), (X0, Y0)
 
-    def solve(self, inits, fasta_options=NO_ARGS):
+    def solve(self, inits, fasta_options=None):
         """Solve the L1-penalized non-negative matrix factorization problem.
 
         :param inits: A tuple containing the initial guesses for X0 and Y0, respectively
-        :param kwargs: Additional options for the FASTA algorithm (default: None)
+        :param fasta_options: Options for the FASTA algorithm (default: None)
+        :return: The problem's computed solution and convergence information on FASTA
         """
         # Combine unknowns into single matrix so FASTA can handle them
         Z0 = np.concatenate(inits)
@@ -84,7 +86,7 @@ class NNFactorizationProblem(ExampleProblem):
         proxg = lambda Z, t: np.concatenate((proximal.shrink(Z[:N,...], t*self.mu),
                                              np.minimum(np.maximum(Z[N:,...], 0), 1)))
 
-        Z = fasta(None, None, f, gradf, g, proxg, Z0, **fasta_options)
+        Z = fasta(None, None, f, gradf, g, proxg, Z0, **(fasta_options or {}))
 
         return (Z.solution[:N,...], Z.solution[N:,...]), Z
 
@@ -100,6 +102,6 @@ if __name__ == "__main__":
 
     adaptive, accelerated, plain = test_modes(problem, inits)
 
-    plots.plot_convergence("Non-Negative Matrix Factorization", (adaptive[1], accelerated[1], plain[1]), ("Adaptive", "Accelerated", "Plain"))
+    plots.plot_convergence("Non-Negative Matrix Factorization", [adaptive[1], accelerated[1], plain[1]], ["Adaptive", "Accelerated", "Plain"])
     problem.plot(adaptive[0])
     plt.show()

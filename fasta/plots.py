@@ -2,15 +2,21 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
+from typing import List
+import fasta
 
 __author__ = "Noah Singer"
 
 __all__ = ["plot_convergence", "plot_signals", "plot_matrices", "show_plots"]
 
 
-def plot_convergence(title, solvers, labels):
-    """Plot the convergence curves of various solvers."""
+def plot_convergence(title: str, solvers: List["fasta.Convergence"], labels: List[str]):
+    """Plot the convergence curves of various solvers.
 
+    :param title: The title of the plot window
+    :param solvers: Convergence information about various solvers
+    :param labels: A label for each solver
+    """
     figure, (residuals, objective) = plt.subplots(1, 2)
     figure.suptitle("FASTA Convergence: {}".format(title))
 
@@ -35,9 +41,13 @@ def plot_convergence(title, solvers, labels):
     objective.legend()
 
 
-def plot_signals(title, original, recovered):
-    """Plot original and recovered signal vectors."""
+def plot_signals(title: str, original: np.ndarray, recovered: np.ndarray):
+    """Plot original and recovered signal vectors.
 
+    :param title: The title of the plot window
+    :param original: The original signal vector
+    :param recovered: The recovered signal vector
+    """
     figure, axes = plt.subplots()
     figure.suptitle(title)
 
@@ -51,9 +61,13 @@ def plot_signals(title, original, recovered):
     axes.legend()
 
 
-def plot_matrices(title, original, recovered):
-    """Plot original and recovered signal matrices."""
+def plot_matrices(title: str, original: np.ndarray, recovered: np.ndarray):
+    """Plot original and recovered signal matrices.
 
+    :param title: The title of the plot window
+    :param original: The original signal matrix
+    :param recovered: The recovered signal matrix
+    """
     min_entry = min(np.min(original), np.min(recovered))
     max_entry = max(np.max(original), np.max(recovered))
 
