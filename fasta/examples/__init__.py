@@ -5,7 +5,7 @@ These problems serve both as readable examples and as tests that the FASTA algor
 
 import numpy as np
 from abc import ABCMeta, abstractclassmethod, abstractstaticmethod
-from typing import Tuple, TypeVar
+from typing import Any, Tuple, TypeVar
 
 from fasta import Convergence
 

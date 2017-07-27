@@ -1,5 +1,6 @@
 """Type hints used throughout the FASTA package."""
 
+import numpy as np
 from typing import Callable, Union
 
 Matrix = np.ndarray
