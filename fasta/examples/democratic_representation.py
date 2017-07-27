@@ -9,8 +9,9 @@ from typing import Tuple
 
 from scipy.fftpack import dct, idct
 
-from fasta import fasta, proximal, plots, Convergence, LinearOperator
+from fasta import fasta, proximal, plots, Convergence
 from fasta.examples import ExampleProblem, test_modes
+from fasta.types import LinearOperator, Vector
 
 __author__ = "Noah Singer"
 
@@ -18,7 +19,7 @@ __all__ = ["DemocraticRepresentationProblem"]
 
 
 class DemocraticRepresentationProblem(ExampleProblem):
-    def __init__(self, A: LinearOperator, At: LinearOperator, b: np.ndarray, mu: float):
+    def __init__(self, A: LinearOperator, At: LinearOperator, b: Vector, mu: float):
         """Instantiate an instance of the democratic representation problem.
 
         :param A: The measurement operator (must be linear, often simply a matrix)
@@ -33,8 +34,24 @@ class DemocraticRepresentationProblem(ExampleProblem):
         self.b = b
         self.mu = mu
 
+    def solve(self, x0: Vector, fasta_options: dict=None) -> Tuple[Vector, Convergence]:
+        """Solve the democratic representation problem.
+
+        :param x0: An initial guess for the solution
+        :param fasta_options: Options for the FASTA algorithm (default: None)
+        :return: The computed democratic representation of the signal and information on FASTA's convergence
+        """
+        f = lambda z: .5 * la.norm((z - self.b).ravel()) ** 2
+        gradf = lambda z: z - self.b
+        g = lambda x: self.mu * la.norm(x, np.inf)
+        proxg = lambda x, t: proximal.project_Linf_ball(x, t*self.mu)
+
+        x = fasta(self.A, self.At, f, gradf, g, proxg, x0, **(fasta_options or {}))
+
+        return x.solution, x
+
     @staticmethod
-    def construct(M: int=500, N: int=1000, mu: float=300.0) -> Tuple["DemocraticRepresentationProblem", np.ndarray]:
+    def construct(M: int=500, N: int=1000, mu: float=300.0) -> Tuple["DemocraticRepresentationProblem", Vector]:
         """Construct a sample democratic representation problem with a randomly subsampled discrete cosine transform.
 
         :param M: The number of measurements (default: 500)
@@ -68,23 +85,7 @@ class DemocraticRepresentationProblem(ExampleProblem):
 
         return DemocraticRepresentationProblem(A, At, b, mu), x0
 
-    def solve(self, x0: np.ndarray, fasta_options: dict=None) -> Tuple[np.ndarray, Convergence]:
-        """Solve the democratic representation problem.
-
-        :param x0: An initial guess for the solution
-        :param fasta_options: Options for the FASTA algorithm (default: None)
-        :return: The problem's computed solution and convergence information on FASTA
-        """
-        f = lambda z: .5 * la.norm((z - self.b).ravel()) ** 2
-        gradf = lambda z: z - self.b
-        g = lambda x: self.mu * la.norm(x, np.inf)
-        proxg = lambda x, t: proximal.project_Linf_ball(x, t*self.mu)
-
-        x = fasta(self.A, self.At, f, gradf, g, proxg, x0, **(fasta_options or {}))
-
-        return x.solution, x
-
-    def plot(self, solution: np.ndarray):
+    def plot(self, solution: Vector) -> None:
         """Plot the computed democratic representation against the original signal.
 
         :param solution: The computed democratic representation

@@ -16,13 +16,14 @@ from matplotlib import pyplot as plt
 
 from fasta import fasta, plots
 from fasta.examples import ExampleProblem, test_modes
+from fasta.types import LinearOperator, Vector, Matrix
 
 __author__ = "Noah Singer"
 
 __all__ = ["generate", "SVMProblem"]
 
 
-def generate(M, N, w):
+def generate(M: int, N: int, w: Vector) -> Matrix:
     """Generate linearly separable data."""
     # Mask representing (+) and (-) labels
     permutation = np.random.permutation(M)
@@ -43,22 +44,41 @@ def generate(M, N, w):
 
 
 class SVMProblem(ExampleProblem):
-    def __init__(self, D, L, C, w=None):
+    def __init__(self, D: Matrix, l: Vector, C, w=None):
         """Create an instance of the SVM classification problem.
 
         :param D: The data matrix
-        :param L: A diagonal matrix of labels for the data
+        :param l: A vector of labels for the data
         :param C: The regularization parameter
         """
         super(ExampleProblem, self).__init__()
 
         self.D = D
-        self.L = L
+        self.l = l
         self.C = C
         self.w = w
-    
+
+    def solve(self, y0: Vector, fasta_options: dict=None) -> Tuple[Vector, Convergence]:
+        """Solve the support vector machine problem.
+
+        :param Y0: An initial guess for the dual variable
+        :param fasta_options: Options for the FASTA algorithm (default: None)
+        :return: The computing hyperplane separating the data and information on FASTA's convergence
+        """
+        f = lambda y: .5* la.norm((self.D.T @ (self.l * y)).ravel()) ** 2 - np.sum(y)
+        gradf = lambda y: self.l * (self.D @ (self.D.T @ (self.l * y))) - 1
+        g = lambda y: 0
+        proxg = lambda y, t: np.minimum(np.maximum(y, 0), self.C)
+
+        # Solve dual problem
+        y = fasta(None, None, f, gradf, g, proxg, y0, **(fasta_options or {}))
+
+        x = self.D.T @ (self.l * y.solution)
+
+        return x, y
+
     @staticmethod
-    def construct(M=1000, N=15, C=0.01, separation=1.0):
+    def construct(M: int=1000, N: int=15, C: float=0.01, separation: float=1.0) -> Tuple["SVMProblem", Vector]:
         """Construct random linearly separable, labeled sample training data for the SVM solver to train on.
 
         :param M: The number of observation vectors (default: 1000)
@@ -72,37 +92,24 @@ class SVMProblem(ExampleProblem):
         w /= la.norm(w)
         w *= separation
 
-        D, L = generate(M, N, w)
+        D, l = generate(M, N, w)
 
         # Initial iterate
         y0 = np.zeros(M)
 
-        return SVMProblem(D, L, C, w=w), y0
+        return SVMProblem(D, l, C, w=w), y0
 
-    def solve(self, y0, fasta_options=None):
-        """Solve the support vector machine problem.
+    def plot(self, solution: Vector, M_train: int=300, hist_size: int=25) -> None:
+        """Plot the results of the computed SVM classifier on randomly generated linearly separable data.
 
-        :param Y0: An initial guess for the dual variable
-        :param fasta_options: Options for the FASTA algorithm (default: None)
-        :return: The problem's computed solution and convergence information on FASTA
+        :param solution: The computed separating hyperplane
+        :param M_train: The size of the test dataset
+        :param hist_size: The number of bars in the visualization histogram
         """
-        f = lambda y: .5*la.norm((self.D.T @ (self.L * y)).ravel())**2 - np.sum(y)
-        gradf = lambda y: self.L * (self.D @ (self.D.T @ (self.L * y))) - 1
-        g = lambda y: 0
-        proxg = lambda y, t: np.minimum(np.maximum(y, 0), self.C)
-
-        # Solve dual problem
-        y = fasta(None, None, f, gradf, g, proxg, y0, **(fasta_options or {}))
-
-        x = self.D.T @ (self.L * y.solution)
-
-        return x, y
-
-    def plot(self, solution, M_train=300, hist_size=25):
         N = solution.shape[0]
-        D_train, L_train = generate(M_train, N, self.w)
+        D_train, l_train = generate(M_train, N, self.w)
 
-        accuracy = np.sum(np.sign(D_train @ solution) == L_train) / M_train
+        accuracy = np.sum(np.sign(D_train @ solution) == l_train) / M_train
 
         # Plot a histogram of the residuals
         figure, axes = plt.subplots()
@@ -111,7 +118,7 @@ class SVMProblem(ExampleProblem):
         axes.set_xlabel("Predicted value")
         axes.set_ylabel("Frequency")
 
-        axes.hist((D_train[L_train == 1] @ solution, D_train[L_train == -1] @ solution),
+        axes.hist((D_train[l_train == 1] @ solution, D_train[l_train == -1] @ solution),
                   hist_size, label=("Positive", "Negative"))
         axes.legend()
 

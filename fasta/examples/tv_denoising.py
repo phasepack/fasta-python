@@ -14,15 +14,16 @@ from numpy import linalg as la
 from scipy.misc import ascent
 from matplotlib import pyplot as plt
 
-from fasta import fasta, plots
+from fasta import fasta, plots, Convergence
 from fasta.examples import ExampleProblem, test_modes
+from fasta.types import LinearOperator, Matrix
 
 __author__ = "Noah Singer"
 
 __all__ = ["grad", "div", "TVDenoisingProblem"]
 
 
-def grad(X):
+def grad(X: Matrix) -> Matrix:
     """The gradient operator on an N-dimensional array, returning an (N+1)-dimensional array, where the
     (N+1)st dimension contains N entries, each representing the gradient in one direction.
 
@@ -39,7 +40,7 @@ def grad(X):
     return gradient
 
 
-def div(X):
+def div(X: Matrix) -> Matrix:
     """The divergence operator on an N-dimensional array, returning an (N-1)-dimensional array. It computes
     backwards differences and sums those differences, acting as the adjoint operator to the gradient.
 
@@ -63,7 +64,7 @@ def div(X):
 
 
 class TVDenoisingProblem(ExampleProblem):
-    def __init__(self, M, mu):
+    def __init__(self, M: Matrix, mu: float):
         """Create an instance of the total variation denoising problem.
 
         :param M: A noisy image
@@ -74,29 +75,7 @@ class TVDenoisingProblem(ExampleProblem):
         self.M = M
         self.mu = mu
 
-    @staticmethod
-    def construct(sigma=0.1, mu=0.1):
-        """Construct a sample total-variation denoising problem using the standard SciPy test image `ascent`.
-
-        :param sigma: The noise level in the image (default: 0.1)
-        :param mu: The regularization parameter (default: 0.01)
-        :return: An example of this type of problem and a good initial guess for its solution
-        """
-        # Generate an image
-        M = ascent().astype(float)
-
-        # Normalize M
-        M /= np.max(M)
-
-        # Add noise
-        M += sigma * np.random.randn(*M.shape)
-
-        # Initial iterate
-        Y0 = np.zeros(M.shape + (2,))
-
-        return TVDenoisingProblem(M, mu), Y0
-
-    def solve(self, Y0, fasta_options=None):
+    def solve(self, Y0: Matrix, fasta_options: dict=None) -> Tuple[Matrix, Convergence]:
         """Solve the total variation denoising problem.
 
         :param Y0: An initial guess for the gradient of the solution
@@ -123,8 +102,33 @@ class TVDenoisingProblem(ExampleProblem):
 
         return X, Y
 
-    def plot(self, solution):
-        # Plot the recovered signal
+    @staticmethod
+    def construct(sigma: float=0.1, mu: float=0.1) -> Tuple["TVDenoisingProblem", Matrix]:
+        """Construct a sample total-variation denoising problem using the standard SciPy test image `ascent`.
+
+        :param sigma: The noise level in the image (default: 0.1)
+        :param mu: The regularization parameter (default: 0.01)
+        :return: An example of this type of problem and a good initial guess for its solution
+        """
+        # Generate an image
+        M = ascent().astype(float)
+
+        # Normalize M
+        M /= np.max(M)
+
+        # Add noise
+        M += sigma * np.random.randn(*M.shape)
+
+        # Initial iterate
+        Y0 = np.zeros(M.shape + (2,))
+
+        return TVDenoisingProblem(M, mu), Y0
+
+    def plot(self, solution: Matrix) -> None:
+        """Plot the recovered, denoised image against the original noisy image.
+
+        :param solution: The denoised image
+        """
         plots.plot_matrices("Total Variation Denoising", self.M, solution)
 
 

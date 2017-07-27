@@ -2,13 +2,14 @@
 
 import numpy as np
 from numpy import linalg as la
+import fasta
 
 __author__ = "Noah Singer"
 
 __all__ = ["project_Linf_ball", "project_L1_ball", "project_Lnuc_ball", "shrink"]
 
 
-def project_Linf_ball(x: np.ndarray, t: float):
+def project_Linf_ball(x: "fasta.types.Vector", t: float) -> "fasta.types.Vector":
     """Project a vector onto an L-inf ball.
 
     :param x: The vector to project
@@ -30,7 +31,7 @@ def project_Linf_ball(x: np.ndarray, t: float):
         return np.zeros(N)
 
 
-def project_L1_ball(x: np.ndarray, t: float):
+def project_L1_ball(x: "fasta.types.Vector", t: float) -> "fasta.types.Vector":
     """Project a vector onto an L1 ball.
 
     :param x: The vector to project
@@ -40,7 +41,7 @@ def project_L1_ball(x: np.ndarray, t: float):
     return x - project_Linf_ball(x, t)
 
 
-def project_Lnuc_ball(X: np.ndarray, t: float):
+def project_Lnuc_ball(X: "fasta.types.Matrix", t: float) -> "fasta.types.Matrix":
     """Project a matrix onto a ball induced by the nuclear norm.
 
     :param x: The matrix to project
@@ -54,7 +55,7 @@ def project_Lnuc_ball(X: np.ndarray, t: float):
     return U @ S @ V
 
 
-def shrink(x: np.ndarray, t: float):
+def shrink(x: np.ndarray, t: float) -> np.ndarray:
     """The shrink (soft-thresholding) operator, which is also the proximal operator for the L1-norm.
 
     The shrink operator reducing the magnitudes of all entries in x by t, leaving them at zero if they're already less

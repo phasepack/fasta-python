@@ -10,8 +10,9 @@ from scipy.spatial.distance import pdist, squareform
 from matplotlib import pyplot as plt
 from typing import Tuple
 
-from fasta import fasta, plots
+from fasta import fasta, plots, Convergence
 from fasta.examples import ExampleProblem, test_modes
+from fasta.types import LinearOperator, Matrix
 
 __author__ = "Noah Singer"
 
@@ -19,7 +20,7 @@ __all__ = ["MaxNormProblem"]
 
 
 class MaxNormProblem(ExampleProblem):
-    def __init__(self, points, mu, sigma=0.1, delta=0.01):
+    def __init__(self, points: Matrix, mu: float, sigma: float=0.1, delta: float=0.01):
         """Create an instance of the max-norm problem.
 
         :param points: The points to cluster
@@ -38,8 +39,32 @@ class MaxNormProblem(ExampleProblem):
         # Build the edge weight matrix
         self.S = delta - np.exp(-distances**2 / sigma**2 / 2)
 
+    def solve(self, X0: Matrix, fasta_options: dict=None) -> Tuple[Matrix, Convergence]:
+        """Solve the max-norm problem.
+
+        :param X0: An initial guess for the solution
+        :param fasta_options: Options for the FASTA algorithm (default: None)
+        :return: The problem's computed solution and information on FASTA's convergence
+        """
+        f = lambda X: np.sum(self.S * (X @ X.T))
+        gradf = lambda X: (self.S + self.S.T) @ X
+        g = lambda X: 0
+
+        def proxg(X, t):
+            norms = la.norm(X, axis=1)
+
+            # Shrink the norms that are too big, and ensure we don't divide by zero
+            scale = np.maximum(norms, self.mu) + (norms == 0)
+
+            return self.mu * X / scale[:,np.newaxis]
+
+        X = fasta(None, None, f, gradf, g, proxg, X0, **(fasta_options or {}))
+
+        return X.solution, X
+
     @staticmethod
-    def construct(N=2000, D=2, noise=0.15, dx=(1, 0.5), K=10, mu=1.0):
+    def construct(N: int=2000, D: int=2, noise: float=0.15, dx: Tuple[float, float]=(1, 0.5), K: int=10,
+                  mu: int=1.0) -> Tuple["MaxNormProblem", Matrix]:
         """Construct a sample max-norm problem by creating a two-moons segmentation dataset, converting it to a weighted graph, and then performing max-norm regularization on its adjacency matrix.
 
         :param N: The number of observations in the two-moons dataset (default: 2000)
@@ -69,30 +94,11 @@ class MaxNormProblem(ExampleProblem):
 
         return MaxNormProblem(points, mu), X0
 
-    def solve(self, X0, fasta_options=None):
-        """Solve the max-norm problem.
+    def plot(self, solution: Matrix) -> None:
+        """Plot the results of the computed classifier on the two-moons dataset.
 
-        :param X0: An initial guess for the gradient of the solution
-        :param fasta_options: Options for the FASTA algorithm (default: None)
-        :return: The problem's computed solution and convergence information on FASTA
+        :param solution: The problem's computed solution
         """
-        f = lambda X: np.sum(self.S * (X @ X.T))
-        gradf = lambda X: (self.S + self.S.T) @ X
-        g = lambda X: 0
-
-        def proxg(X, t):
-            norms = la.norm(X, axis=1)
-
-            # Shrink the norms that are too big, and ensure we don't divide by zero
-            scale = np.maximum(norms, self.mu) + (norms == 0)
-
-            return self.mu * X / scale[:,np.newaxis]
-
-        X = fasta(None, None, f, gradf, g, proxg, X0, **(fasta_options or {}))
-
-        return X.solution, X
-
-    def plot(self, solution):
         labels = np.sign(adaptive[0] @ np.random.randn(solution.shape[1]))
 
         figure, axes = plt.subplots()

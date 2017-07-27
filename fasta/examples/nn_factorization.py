@@ -6,8 +6,9 @@ import numpy as np
 from numpy import linalg as la
 from matplotlib import pyplot as plt
 
-from fasta import fasta, proximal, plots
+from fasta import fasta, proximal, plots, Convergence
 from fasta.examples import ExampleProblem, test_modes
+from fasta.typing import LinearOperator, Matrix
 
 __author__ = "Noah Singer"
 
@@ -15,7 +16,7 @@ __all__ = ["NonNegativeFactorizationProblem"]
 
 
 class NNFactorizationProblem(ExampleProblem):
-    def __init__(self, S, mu, X=None, Y=None):
+    def __init__(self, S: Matrix, mu: float, X: Matrix=None, Y: Matrix=None):
         """Create an instance of the non-negative factorization problem.
 
         :param S: The matrix to factorize
@@ -30,40 +31,13 @@ class NNFactorizationProblem(ExampleProblem):
         self.X = X
         self.Y = Y
 
-    @staticmethod
-    def construct(M=800, N=200, K=10, b=0.75, sigma=0.1, mu=1.0):
-        """Construct a sample non-negative factorization problem by computing two random matrices, making one sparse, and taking their product.
-
-        :param M: The number of rows in the data matrix (default: 800)
-        :param N: The number of columns in the data matrix (default: 200)
-        :param K: The rank of the factorization (default: 10)
-        :param b: The sparsity parameter for the first factor, X (default: 0.75)
-        :param sigma: The noise level in the observation matrix (default: 0.1)
-        :param mu: The regularization parameter (default: 1.0)
-        :return: An example of this type of problem and a good initial guess for its solution
-        """
-        # Create random factor matrices
-        X = np.random.rand(M, K)
-        Y = np.random.rand(N, K)
-
-        # Make X sparse
-        X *= np.random.rand(M, K) > b
-
-        # Create observation matrix
-        S = X @ Y.T + sigma * np.random.randn(M, N)
-
-        # Initial iterates
-        X0 = np.zeros((M, K))
-        Y0 = np.random.rand(N, K)
-
-        return NNFactorizationProblem(S, mu, X=X, Y=Y), (X0, Y0)
-
-    def solve(self, inits, fasta_options=None):
+    def solve(self, inits: Tuple["Matrix", "Matrix"],
+              fasta_options: dict=None) -> Tuple[Tuple["Matrix", "Matrix"], Convergence]:
         """Solve the L1-penalized non-negative matrix factorization problem.
 
         :param inits: A tuple containing the initial guesses for X0 and Y0, respectively
         :param fasta_options: Options for the FASTA algorithm (default: None)
-        :return: The problem's computed solution and convergence information on FASTA
+        :return: The two computed factor matrices and information on FASTA's convergence
         """
         # Combine unknowns into single matrix so FASTA can handle them
         Z0 = np.concatenate(inits)
@@ -90,8 +64,40 @@ class NNFactorizationProblem(ExampleProblem):
 
         return (Z.solution[:N,...], Z.solution[N:,...]), Z
 
-    def plot(self, solutions):
-        # Plot the recovered matrices
+    @staticmethod
+    def construct(M: int=800, N: int=200, K: int=10, b: float=0.75, sigma: float=0.1,
+                  mu: float=1.0) -> Tuple["NNFactorizationProblem", Tuple["Matrix", "Matrix"]]:
+        """Construct a sample non-negative factorization problem by computing two random matrices, making one sparse, and taking their product.
+
+        :param M: The number of rows in the data matrix (default: 800)
+        :param N: The number of columns in the data matrix (default: 200)
+        :param K: The rank of the factorization (default: 10)
+        :param b: The sparsity parameter for the first factor, X (default: 0.75)
+        :param sigma: The noise level in the observation matrix (default: 0.1)
+        :param mu: The regularization parameter (default: 1.0)
+        :return: An example of this type of problem and a good initial guess for its solution
+        """
+        # Create random factor matrices
+        X = np.random.rand(M, K)
+        Y = np.random.rand(N, K)
+
+        # Make X sparse
+        X *= np.random.rand(M, K) > b
+
+        # Create observation matrix
+        S = X @ Y.T + sigma * np.random.randn(M, N)
+
+        # Initial iterates
+        X0 = np.zeros((M, K))
+        Y0 = np.random.rand(N, K)
+
+        return NNFactorizationProblem(S, mu, X=X, Y=Y), (X0, Y0)
+
+    def plot(self, solutions: Tuple["Matrix", "Matrix"]):
+        """Plot the recovered factor matrices against the original unknown factor matrices.
+
+        :param solutions: A tuple containing the two recovered factor matrices
+        """
         plots.plot_matrices("Factor X", self.X, solutions[0])
         plots.plot_matrices("Factor Y", self.Y, solutions[1])
 

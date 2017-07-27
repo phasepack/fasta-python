@@ -12,8 +12,9 @@ from numpy import linalg as la
 from matplotlib import pyplot as plt
 from typing import Tuple
 
-from fasta import fasta, proximal, plots
+from fasta import fasta, proximal, plots, Convergence
 from fasta.examples import ExampleProblem, test_modes
+from fasta.types import LinearOperator, Matrix
 
 __author__ = "Noah Singer"
 
@@ -21,7 +22,7 @@ __all__ = ["MMVProblem"]
 
 
 class MMVProblem(ExampleProblem):
-    def __init__(self, A, At, B, mu, X=None):
+    def __init__(self, A: LinearOperator, At: LinearOperator, B: Matrix, mu: float, X: Matrix=None):
         """Create a multiple-measurement vector problem.
 
         :param A: The measurement operator (must be linear, often simply a matrix)
@@ -38,8 +39,34 @@ class MMVProblem(ExampleProblem):
         self.mu = mu
         self.X = X
 
+    def solve(self, X0: Matrix, fasta_options: dict=None) -> Tuple[Matrix, Convergence]:
+        """Solve the multiple measurement vector (MMV) problem.
+
+        :param X0: An initial guess for the solution
+        :param fasta_options: Options for the FASTA algorithm (default: None)
+        :return: The problem's computed solution and information on FASTA's convergence
+        """
+        f = lambda Z: .5 * la.norm((Z - self.B).ravel())**2
+        gradf = lambda Z: Z - self.B
+        g = lambda X: self.mu * np.sum(np.sqrt(np.sum(X * X, axis=1)))
+
+        def prox_mmv(X, t):
+            norms = la.norm(X, axis=1)
+
+            # Shrink the norms, and ensure we don't divide by zero
+            scale = proximal.shrink(norms, t) / (norms + (norms == 0))
+
+            return X * scale[:,np.newaxis]
+
+        proxg = lambda X, t: prox_mmv(X, self.mu * t)
+
+        X = fasta(self.A, self.At, f, gradf, g, proxg, X0, **(fasta_options or {}))
+
+        return X.solution, X
+
     @staticmethod
-    def construct(M=20, N=30, L=10, K=7, sigma=0.1, mu=1.0):
+    def construct(M: int=20, N: int=30, L: int=10, K: int=7, sigma: float=0.1,
+                  mu: float=1.0) -> Tuple["MMVProblem", Matrix]:
         """Construct a sample max-norm problem by creating a two-moons segmentation dataset, converting it to a weighted graph, and then performing max-norm regularization on its adjacency matrix.
 
         :param M: The number of measurements (default: 20)
@@ -65,32 +92,11 @@ class MMVProblem(ExampleProblem):
 
         return MMVProblem(A, A.T, B, mu, X=X), X0
 
-    def solve(self, X0, fasta_options=None):
-        """Solve the multiple measurement vector (MMV) problem.
+    def plot(self, solution: Matrix) -> None:
+        """Plot the recovered matrix against the original unknown matrix.
 
-        :param X0: An initial guess for the solution
-        :param fasta_options: Options for the FASTA algorithm (default: None)
-        :return: The problem's computed solution and convergence information on FASTA
+        :param solution: The recovered matrix
         """
-        f = lambda Z: .5 * la.norm((Z - self.B).ravel())**2
-        gradf = lambda Z: Z - self.B
-        g = lambda X: self.mu * np.sum(np.sqrt(np.sum(X * X, axis=1)))
-
-        def prox_mmv(X, t):
-            norms = la.norm(X, axis=1)
-
-            # Shrink the norms, and ensure we don't divide by zero
-            scale = proximal.shrink(norms, t) / (norms + (norms == 0))
-
-            return X * scale[:,np.newaxis]
-
-        proxg = lambda X, t: prox_mmv(X, self.mu * t)
-
-        X = fasta(self.A, self.At, f, gradf, g, proxg, X0, **(fasta_options or {}))
-
-        return X.solution, X
-
-    def plot(self, solution):
         plots.plot_matrices("MMV", self.X, solution)
 
 

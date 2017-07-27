@@ -23,23 +23,19 @@ from numpy import linalg as la
 from time import time
 from typing import Callable
 
-from . import plots, proximal, stopping, utils
-
+from . import plots, proximal, stopping, utils, types
 
 __author__ = "Noah Singer"
 
-__all__ = ["fasta", "Convergence", "LinearOperator"]
+__all__ = ["fasta", "Convergence"]
 
 EPSILON = 1E-12
-
-# Type hint for linear operators used throughout this package
-LinearOperator = Callable[[np.ndarray], np.ndarray]
 
 
 # TODO: check mutually allowed modes
 # TODO: adjust to allow tensors
 
-def fasta(A: LinearOperator, At: LinearOperator,
+def fasta(A: types.LinearOperator, At: types.LinearOperator,
           f: Callable[[np.ndarray], float], gradf: Callable[[np.ndarray], np.ndarray],
           g: Callable[[np.ndarray], float], proxg: Callable[[np.ndarray], np.ndarray], x0: np.ndarray,
 

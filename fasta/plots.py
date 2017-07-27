@@ -10,7 +10,7 @@ __author__ = "Noah Singer"
 __all__ = ["plot_convergence", "plot_signals", "plot_matrices", "show_plots"]
 
 
-def plot_convergence(title: str, solvers: List["fasta.Convergence"], labels: List[str]):
+def plot_convergence(title: str, solvers: List["fasta.Convergence"], labels: List[str]) -> None:
     """Plot the convergence curves of various solvers.
 
     :param title: The title of the plot window
@@ -41,7 +41,7 @@ def plot_convergence(title: str, solvers: List["fasta.Convergence"], labels: Lis
     objective.legend()
 
 
-def plot_signals(title: str, original: np.ndarray, recovered: np.ndarray):
+def plot_signals(title: str, original: "fasta.types.Vector", recovered: "fasta.types.Vector") -> None:
     """Plot original and recovered signal vectors.
 
     :param title: The title of the plot window
@@ -61,7 +61,7 @@ def plot_signals(title: str, original: np.ndarray, recovered: np.ndarray):
     axes.legend()
 
 
-def plot_matrices(title: str, original: np.ndarray, recovered: np.ndarray):
+def plot_matrices(title: str, original: "fasta.types.Matrix", recovered: "fasta.types.Matrix") -> None:
     """Plot original and recovered signal matrices.
 
     :param title: The title of the plot window
