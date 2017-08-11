@@ -9,7 +9,7 @@ from typing import Tuple
 
 from fasta import fasta, proximal, plots, Convergence
 from fasta.examples import ExampleProblem, test_modes
-from fasta.types import LinearOperator, Vector
+from fasta.operator import LinearOperator, Vector
 
 __author__ = "Noah Singer"
 
@@ -17,11 +17,10 @@ __all__ = ["LASSOProblem"]
 
 
 class LASSOProblem(ExampleProblem):
-    def __init__(self, A: LinearOperator, At: LinearOperator, b: Vector, mu: float, x: Vector=None):
+    def __init__(self, A: LinearOperator, b: Vector, mu: float, x: Vector=None):
         """Create an instance of the LASSO problem.
 
         :param A: The measurement operator (must be linear, often simply a matrix)
-        :param At: The Hermitian adjoint operator of A (for real matrices A, just the transpose)
         :param b: The observation vector
         :param mu: The regularization parameter
         :param x: The true value of the unknown signal, if known (default: None)
@@ -29,7 +28,6 @@ class LASSOProblem(ExampleProblem):
         super(ExampleProblem, self).__init__()
 
         self.A = A
-        self.At = At
         self.b = b
         self.mu = mu
         self.x = x
@@ -46,7 +44,7 @@ class LASSOProblem(ExampleProblem):
         g = lambda x: 0  # TODO: add an extra condition to this
         proxg = lambda x, t: proximal.project_L1_ball(x, self.mu)
 
-        x = fasta(self.A, self.At, f, gradf, g, proxg, x0, **(fasta_options or {}))
+        x = fasta(self.A, f, gradf, g, proxg, x0, **(fasta_options or {}))
 
         return x.solution, x
 
@@ -78,7 +76,7 @@ class LASSOProblem(ExampleProblem):
         # Initial iterate
         x0 = np.zeros(N)
 
-        return LASSOProblem(A, A.T, b, mu, x=x), x0
+        return LASSOProblem(LinearOperator.from_matrix(A), b, mu, x=x), x0
 
     def plot(self, solution: Vector) -> None:
         """Plot the recovered signal against the original unknown signal.

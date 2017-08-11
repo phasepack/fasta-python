@@ -3,9 +3,8 @@
 These problems serve both as readable examples and as tests that the FASTA algorithm is working properly.
 """
 
-import numpy as np
 from abc import ABCMeta, abstractclassmethod, abstractstaticmethod
-from typing import Any, Tuple, TypeVar
+from typing import Any, Tuple
 
 from fasta import Convergence
 
@@ -24,7 +23,6 @@ class ExampleProblem(metaclass=ABCMeta):
     problem.
     """
 
-    @abstractclassmethod
     def solve(self, initial_guess: Any, fasta_options: dict=None) -> Tuple[Any, Convergence]:
         """Solve this problem.
 
@@ -45,7 +43,6 @@ class ExampleProblem(metaclass=ABCMeta):
         """
         pass
 
-    @abstractclassmethod
     def plot(self, solution: Any) -> None:
         """Plot a computed solution to this problem.
 

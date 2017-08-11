@@ -14,7 +14,7 @@ from typing import Tuple
 
 from fasta import fasta, proximal, plots, Convergence
 from fasta.examples import ExampleProblem, test_modes
-from fasta.types import LinearOperator, Matrix
+from fasta.operator import LinearOperator, Matrix
 
 __author__ = "Noah Singer"
 

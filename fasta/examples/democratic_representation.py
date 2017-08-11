@@ -11,7 +11,7 @@ from scipy.fftpack import dct, idct
 
 from fasta import fasta, proximal, plots, Convergence
 from fasta.examples import ExampleProblem, test_modes
-from fasta.types import LinearOperator, Vector
+from fasta.operator import LinearOperator, Vector
 
 __author__ = "Noah Singer"
 
@@ -19,18 +19,16 @@ __all__ = ["DemocraticRepresentationProblem"]
 
 
 class DemocraticRepresentationProblem(ExampleProblem):
-    def __init__(self, A: LinearOperator, At: LinearOperator, b: Vector, mu: float):
+    def __init__(self, A: LinearOperator, b: Vector, mu: float):
         """Instantiate an instance of the democratic representation problem.
 
         :param A: The measurement operator (must be linear, often simply a matrix)
-        :param At: The Hermitian adjoint operator of A (for real matrices A, just the transpose)
         :param b: The observation vector
         :param mu: The regularization parameter
         """
         super(ExampleProblem, self).__init__()
 
         self.A = A
-        self.At = At
         self.b = b
         self.mu = mu
 
@@ -46,7 +44,7 @@ class DemocraticRepresentationProblem(ExampleProblem):
         g = lambda x: self.mu * la.norm(x, np.inf)
         proxg = lambda x, t: proximal.project_Linf_ball(x, t*self.mu)
 
-        x = fasta(self.A, self.At, f, gradf, g, proxg, x0, **(fasta_options or {}))
+        x = fasta(self.A, f, gradf, g, proxg, x0, **(fasta_options or {}))
 
         return x.solution, x
 
@@ -72,10 +70,6 @@ class DemocraticRepresentationProblem(ExampleProblem):
         mask = np.zeros(N)
         mask[samples] = 1
 
-        # Create matrix
-        A = lambda x: mask * dct(x, norm='ortho')
-        At = lambda x: idct(mask * x, norm='ortho')
-
         # Create random signal, where the unknown measurements correspond to the rows of the DCT that are sampled
         b = np.zeros(N)
         b[samples] = np.random.randn(M)
@@ -83,7 +77,9 @@ class DemocraticRepresentationProblem(ExampleProblem):
         # Initial iterate
         x0 = np.zeros(N)
 
-        return DemocraticRepresentationProblem(A, At, b, mu), x0
+        return DemocraticRepresentationProblem(LinearOperator(lambda x: mask * dct(x, norm='ortho'),
+                                                              lambda x: idct(mask * x, norm='ortho'),
+                                                              x0.shape), b, mu), x0
 
     def plot(self, solution: Vector) -> None:
         """Plot the computed democratic representation against the original signal.

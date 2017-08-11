@@ -23,7 +23,7 @@ from numpy import linalg as la
 from time import time
 from typing import Callable
 
-from . import plots, proximal, stopping, utils, types
+from . import plots, proximal, stopping, operator
 
 __author__ = "Noah Singer"
 
@@ -35,7 +35,7 @@ EPSILON = 1E-12
 # TODO: check mutually allowed modes
 # TODO: adjust to allow tensors
 
-def fasta(A: types.LinearOperator, At: types.LinearOperator,
+def fasta(A: operator.LinearMap,
           f: Callable[[np.ndarray], float], gradf: Callable[[np.ndarray], np.ndarray],
           g: Callable[[np.ndarray], float], proxg: Callable[[np.ndarray], np.ndarray], x0: np.ndarray,
 
@@ -84,9 +84,6 @@ def fasta(A: types.LinearOperator, At: types.LinearOperator,
     #   - Variables ending with 1 indicate the current round's values
     #   - Variables ending with _hist indicate a history that is tracked between rounds
 
-    A = utils.operatorize(A)
-    At = utils.operatorize(At)
-
     # Option to just do gradient descent
     if g is None:
         g = lambda x: 0
@@ -106,8 +103,8 @@ def fasta(A: types.LinearOperator, At: types.LinearOperator,
         x2 = np.random.randn(*x0.shape)
 
         # Compute the gradients between the vectors
-        gradf1 = At(gradf(A(x1)))
-        gradf2 = At(gradf(A(x2)))
+        gradf1 = A.H(gradf(A(x1)))
+        gradf2 = A.H(gradf(A(x2)))
 
         # Approximate the Lipschitz constant of f
         L = la.norm((gradf1 - gradf2).ravel()) / la.norm((x1 - x2).ravel())
@@ -137,7 +134,7 @@ def fasta(A: types.LinearOperator, At: types.LinearOperator,
 
     z1 = A(x1)
     f1 = f(z1)
-    gradf1 = At(gradf(z1))
+    gradf1 = A.H(gradf(z1))
 
     f_hist[0] = f1
 
@@ -248,7 +245,7 @@ def fasta(A: types.LinearOperator, At: types.LinearOperator,
             f1 = f(z1)
 
         # Compute the next iteration's gradient
-        gradf1 = At(gradf(z1))
+        gradf1 = A.H(gradf(z1))
         tau1 = tau0
 
         # Adaptive adjustments of stepsize using the Barzilai-Borwein method (spectral method), which

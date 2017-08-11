@@ -16,7 +16,7 @@ from matplotlib import pyplot as plt
 
 from fasta import fasta, plots
 from fasta.examples import ExampleProblem, test_modes
-from fasta.types import LinearOperator, Vector, Matrix
+from fasta.operator import LinearOperator, Vector, Matrix
 
 __author__ = "Noah Singer"
 
