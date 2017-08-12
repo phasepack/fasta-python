@@ -41,7 +41,7 @@ def plot_convergence(title: str, solvers: List["fasta.Convergence"], labels: Lis
     objective.legend()
 
 
-def plot_signals(title: str, original: "fasta.operator.Vector", recovered: "fasta.operator.Vector") -> None:
+def plot_signals(title: str, original: "fasta.linalg.Vector", recovered: "fasta.linalg.Vector") -> None:
     """Plot original and recovered signal vectors.
 
     :param title: The title of the plot window
@@ -61,7 +61,7 @@ def plot_signals(title: str, original: "fasta.operator.Vector", recovered: "fast
     axes.legend()
 
 
-def plot_matrices(title: str, original: "fasta.operator.Matrix", recovered: "fasta.operator.Matrix") -> None:
+def plot_matrices(title: str, original: "fasta.linalg.Matrix", recovered: "fasta.linalg.Matrix") -> None:
     """Plot original and recovered signal matrices.
 
     :param title: The title of the plot window

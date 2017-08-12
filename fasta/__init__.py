@@ -23,7 +23,7 @@ from numpy import linalg as la
 from time import time
 from typing import Callable
 
-from . import plots, proximal, stopping, operator
+from . import plots, proximal, stopping, linalg
 
 __author__ = "Noah Singer"
 
@@ -35,7 +35,7 @@ EPSILON = 1E-12
 # TODO: check mutually allowed modes
 # TODO: adjust to allow tensors
 
-def fasta(A: operator.LinearMap,
+def fasta(A: linalg.LinearMap,
           f: Callable[[np.ndarray], float], gradf: Callable[[np.ndarray], np.ndarray],
           g: Callable[[np.ndarray], float], proxg: Callable[[np.ndarray], np.ndarray], x0: np.ndarray,
 

@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 
 from fasta import fasta, proximal, plots, Convergence
 from fasta.examples import ExampleProblem, test_modes
-from fasta.operator import LinearOperator, Vector
+from fasta.linalg import LinearOperator, Vector
 
 __author__ = "Noah Singer"
 

@@ -9,7 +9,7 @@ __author__ = "Noah Singer"
 __all__ = ["project_Linf_ball", "project_L1_ball", "project_Lnuc_ball", "shrink"]
 
 
-def project_Linf_ball(x: "fasta.operator.Vector", t: float) -> "fasta.operator.Vector":
+def project_Linf_ball(x: "fasta.linalg.Vector", t: float) -> "fasta.linalg.Vector":
     """Project a vector onto an L-inf ball.
 
     :param x: The vector to project
@@ -31,7 +31,7 @@ def project_Linf_ball(x: "fasta.operator.Vector", t: float) -> "fasta.operator.V
         return np.zeros(N)
 
 
-def project_L1_ball(x: "fasta.operator.Vector", t: float) -> "fasta.operator.Vector":
+def project_L1_ball(x: "fasta.linalg.Vector", t: float) -> "fasta.linalg.Vector":
     """Project a vector onto an L1 ball.
 
     :param x: The vector to project
@@ -41,7 +41,7 @@ def project_L1_ball(x: "fasta.operator.Vector", t: float) -> "fasta.operator.Vec
     return x - project_Linf_ball(x, t)
 
 
-def project_Lnuc_ball(X: "fasta.operator.Matrix", t: float) -> "fasta.operator.Matrix":
+def project_Lnuc_ball(X: "fasta.linalg.Matrix", t: float) -> "fasta.linalg.Matrix":
     """Project a matrix onto a ball induced by the nuclear norm.
 
     :param x: The matrix to project
