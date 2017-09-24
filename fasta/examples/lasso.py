@@ -2,14 +2,14 @@
 
 The problem is re-expressed with a characteristic function function for the constraint."""
 
-import numpy as np
-from numpy import linalg as la
-from matplotlib import pyplot as plt
-from typing import Tuple
+from typing import Tuple, Dict
 
-from fasta import fasta, proximal, plots, Convergence
+import numpy as np
+from fasta import fasta, proximal, plots
 from fasta.examples import ExampleProblem, test_modes
-from fasta.linalg import LinearOperator, Vector
+from flow.linalg import LinearMap, Vector
+from matplotlib import pyplot as plt
+from numpy import linalg as la
 
 __author__ = "Noah Singer"
 
@@ -17,7 +17,7 @@ __all__ = ["LASSOProblem"]
 
 
 class LASSOProblem(ExampleProblem):
-    def __init__(self, A: LinearOperator, b: Vector, mu: float, x: Vector=None):
+    def __init__(self, A: LinearMap, b: Vector, mu: float, x: Vector=None):
         """Create an instance of the LASSO problem.
 
         :param A: The measurement operator (must be linear, often simply a matrix)
@@ -32,7 +32,7 @@ class LASSOProblem(ExampleProblem):
         self.mu = mu
         self.x = x
 
-    def solve(self, x0: Vector, fasta_options: dict=None) -> Tuple[Vector, Convergence]:
+    def solve(self, x0: Vector, fasta_options: dict=None) -> Tuple[Vector, Dict]:
         """Solve the LASSO regression problem with FASTA.
 
         :param x0: An initial guess for the solution
@@ -76,7 +76,7 @@ class LASSOProblem(ExampleProblem):
         # Initial iterate
         x0 = np.zeros(N)
 
-        return LASSOProblem(LinearOperator.from_matrix(A), b, mu, x=x), x0
+        return LASSOProblem(LinearMap.mappify(A), b, mu, x=x), x0
 
     def plot(self, solution: Vector) -> None:
         """Plot the recovered signal against the original unknown signal.

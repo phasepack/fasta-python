@@ -7,14 +7,14 @@ sparsity pattern, and so the sparsity constraint on X is formulated as,
 
 where X_i denotes the ith row of X."""
 
-import numpy as np
-from numpy import linalg as la
-from matplotlib import pyplot as plt
 from typing import Tuple
 
+import numpy as np
 from fasta import fasta, proximal, plots, Convergence
 from fasta.examples import ExampleProblem, test_modes
 from fasta.linalg import LinearOperator, Matrix
+from matplotlib import pyplot as plt
+from numpy import linalg as la
 
 __author__ = "Noah Singer"
 

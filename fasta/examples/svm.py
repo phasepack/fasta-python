@@ -11,12 +11,11 @@ maximum-margin classifier. The problem is solved by formulating the dual problem
 """
 
 import numpy as np
-from numpy import linalg as la
-from matplotlib import pyplot as plt
-
 from fasta import fasta, plots
 from fasta.examples import ExampleProblem, test_modes
-from fasta.linalg import LinearOperator, Vector, Matrix
+from fasta.linalg import Vector, Matrix
+from matplotlib import pyplot as plt
+from numpy import linalg as la
 
 __author__ = "Noah Singer"
 

@@ -10,13 +10,12 @@ This is accomplished by forming the dual problem,
 """
 
 import numpy as np
-from numpy import linalg as la
-from scipy.misc import ascent
-from matplotlib import pyplot as plt
-
 from fasta import fasta, plots, Convergence
 from fasta.examples import ExampleProblem, test_modes
-from fasta.linalg import LinearOperator, Matrix
+from fasta.linalg import Matrix
+from matplotlib import pyplot as plt
+from numpy import linalg as la
+from scipy.misc import ascent
 
 __author__ = "Noah Singer"
 

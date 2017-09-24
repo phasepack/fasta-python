@@ -2,16 +2,15 @@
 
 The solver promotes a solution with low dynamic range."""
 
-import numpy as np
-from numpy import linalg as la
-from matplotlib import pyplot as plt
 from typing import Tuple
 
-from scipy.fftpack import dct, idct
-
+import numpy as np
 from fasta import fasta, proximal, plots, Convergence
 from fasta.examples import ExampleProblem, test_modes
 from fasta.linalg import LinearOperator, Vector
+from matplotlib import pyplot as plt
+from numpy import linalg as la
+from scipy.fftpack import dct, idct
 
 __author__ = "Noah Singer"
 

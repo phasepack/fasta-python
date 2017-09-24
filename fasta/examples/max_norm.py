@@ -4,15 +4,15 @@ The NP-complete max-cut problem can be relaxed into this form. The inequality co
 of X.
 """
 
-import numpy as np
-from numpy import linalg as la
-from scipy.spatial.distance import pdist, squareform
-from matplotlib import pyplot as plt
 from typing import Tuple
 
+import numpy as np
 from fasta import fasta, plots, Convergence
 from fasta.examples import ExampleProblem, test_modes
-from fasta.linalg import LinearOperator, Matrix
+from fasta.linalg import Matrix
+from matplotlib import pyplot as plt
+from numpy import linalg as la
+from scipy.spatial.distance import pdist, squareform
 
 __author__ = "Noah Singer"
 

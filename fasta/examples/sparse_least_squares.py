@@ -1,12 +1,11 @@
 """Solve the L1-penalized least squares problem (also known as basis pursuit denoising, or BPDN), min_x mu||x||_1 + .5||Ax-b||^2, using the FASTA solver."""
 
 import numpy as np
-from numpy import linalg as la
-from matplotlib import pyplot as plt
-
 from fasta import fasta, proximal, plots, Convergence
 from fasta.examples import ExampleProblem, test_modes
 from fasta.linalg import LinearOperator, Vector
+from matplotlib import pyplot as plt
+from numpy import linalg as la
 
 __author__ = "Noah Singer"
 
