@@ -69,6 +69,7 @@ def initializer(inp, state):
     state[fx] = inp['f'](state[z])
     state[gradfx] = inp['A'].H(inp['gradf'](state[z]))
 
+
 @flow.flow
 def fbs(inp, state):
     """A flow to perform forwards/backwards splitting (FBS)."""
@@ -83,6 +84,7 @@ def fbs(inp, state):
     state[fx] = inp['f'](state[z])
     state[gradfx] = inp['A'].H(inp['gradf'](state[z]))
 
+
 @flow.flow
 def convergence(inp, state):
     """A flow to record algorithm convergence information."""
@@ -94,9 +96,9 @@ def convergence(inp, state):
 
 
 @flow.flow
-def max_iters(inp, state):
-    """A flow to check whether to stop the iteration."""
-    state[flow.CONDITION] = state.get_tape(-1).counter <= inp['max_iterations']
+def residual_stop(inp, state):
+    """A flow to check whether the iteration should continue."""
+    state[flow.CONDITION] = state[residual] <= inp['tolerance'] and state.get_tape(-1).counter <= inp['max_iterations']
 
 
 @flow.flow
@@ -121,9 +123,10 @@ def adaptive_stepsize_selector(inp, state):
         state[tau] = state[tau,-1] * 1.5
 
 
-x_unaccel = flow.Var('x_ua', "The un-accelerated iterate.")
-z_unaccel = flow.Var('z_a', "The un-accelerated conditioned iterate.")
-alpha = flow.Var('a', "The acceleration parameter.")
+x_unaccel = flow.Var('x_unaccelerated', "The un-accelerated iterate.")
+z_unaccel = flow.Var('z_unaccelerated', "The un-accelerated conditioned iterate.")
+alpha = flow.Var('alpha', "The acceleration parameter.")
+accel_vars = [x_unaccel, z_unaccel, alpha]
 
 
 @flow.flow
@@ -171,14 +174,16 @@ def fasta(A,
           func: Callable[[np.ndarray], np.ndarray]=None):
     body = flow.time(fbs >>
                      (adaptive_stepsize_selector if adaptive else None) >>
-                     (accelerator if adaptive else None) >>
+                     (accelerator if accelerate else None) >>
                      convergence)
 
     loop_vars = [x, gradfx, tau, flow.TIME, residual, norm_residual, objective]
+    initial_vars = [x, z, fx, gradfx, tau]
     if accelerate:
-        loop_vars += [x_unaccel, z_unaccel, alpha]
+        loop_vars += accel_vars
+        initial_vars += accel_vars
 
-    fasta_loop = flow.Loop(body, max_iters, save=True)
+    fasta_loop = flow.Loop(body, residual_stop, loop_vars, save=True, check_first=False, initial_vars=initial_vars)
     fasta_flow = stepsize_estimator >> initializer >> (acceleration_initializer if accelerate else None) >> fasta_loop
 
     state = flow.State()
@@ -192,7 +197,8 @@ def fasta(A,
         'proxg': proxg,
         'max_iterations': max_iters,
         'tolerance': tolerance,
-        'epsilon': 1e-8
+        'epsilon': 1e-8,
+        'restart': restart
     }, state)
 
     return type('Convergence', (object,), {
