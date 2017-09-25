@@ -105,7 +105,7 @@ def fasta(A,
     @flow.flow
     def residual_stop(inp, state):
         """A flow to check whether the iteration should continue."""
-        state[flow.CONDITION] = state[residual] >= inp['tolerance'] and state[i] <= inp['max_iterations']
+        state[flow.CONDITION] = state[residual] >= inp['tolerance'] and state[i] < inp['max_iterations']
 
     @flow.flow
     def adaptive_stepsize_selector(inp, state):

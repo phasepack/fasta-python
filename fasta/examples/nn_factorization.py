@@ -2,13 +2,15 @@
 
 This problem is non-convex, but FBS is still often effective."""
 
+from typing import Tuple
+
 import numpy as np
 from numpy import linalg as la
 from matplotlib import pyplot as plt
 
-from fasta import fasta, proximal, plots, Convergence
+from fasta import fasta, proximal, plots
 from fasta.examples import ExampleProblem, test_modes
-from fasta.typing import LinearOperator, Matrix
+from flow.linalg import LinearMap, Matrix
 
 __author__ = "Noah Singer"
 
@@ -32,7 +34,7 @@ class NNFactorizationProblem(ExampleProblem):
         self.Y = Y
 
     def solve(self, inits: Tuple["Matrix", "Matrix"],
-              fasta_options: dict=None) -> Tuple[Tuple["Matrix", "Matrix"], Convergence]:
+              fasta_options: dict=None):
         """Solve the L1-penalized non-negative matrix factorization problem.
 
         :param inits: A tuple containing the initial guesses for X0 and Y0, respectively
@@ -60,7 +62,7 @@ class NNFactorizationProblem(ExampleProblem):
         proxg = lambda Z, t: np.concatenate((proximal.shrink(Z[:N,...], t*self.mu),
                                              np.minimum(np.maximum(Z[N:,...], 0), 1)))
 
-        Z = fasta(None, None, f, gradf, g, proxg, Z0, **(fasta_options or {}))
+        Z = fasta(LinearMap.identity(Z0.shape), f, gradf, g, proxg, Z0, **(fasta_options or {}))
 
         return (Z.solution[:N,...], Z.solution[N:,...]), Z
 

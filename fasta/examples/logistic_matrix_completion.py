@@ -7,11 +7,12 @@
 from typing import Tuple
 
 import numpy as np
-from fasta import fasta, proximal, plots, Convergence
+from fasta import fasta, proximal, plots
 from fasta.examples import ExampleProblem, test_modes
-from fasta.linalg import Matrix
 from matplotlib import pyplot as plt
 from numpy import linalg as la
+
+from flow.linalg import LinearMap, Matrix
 
 __author__ = "Noah Singer"
 
@@ -32,7 +33,7 @@ class LogisticMatrixCompletionProblem(ExampleProblem):
         self.mu = mu
         self.X = X
 
-    def solve(self, X0: Matrix, fasta_options: dict=None) -> Tuple[Matrix, Convergence]:
+    def solve(self, X0: Matrix, fasta_options: dict=None):
         """Solve the 1-bit logistic matrix completion problem with FASTA.
 
         :param X0: An initial guess for the solution
@@ -44,7 +45,7 @@ class LogisticMatrixCompletionProblem(ExampleProblem):
         g = lambda X: self.mu * la.norm(np.diag(la.svd(X)[1]), 1)
         proxg = lambda X, t: proximal.project_Lnuc_ball(X, t*self.mu)
 
-        X = fasta(None, None, f, gradf, g, proxg, X0, **(fasta_options or {}))
+        X = fasta(LinearMap.identity(X0.shape), f, gradf, g, proxg, X0, **(fasta_options or {}))
 
         return X.solution, X
 

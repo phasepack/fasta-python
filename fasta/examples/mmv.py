@@ -10,9 +10,9 @@ where X_i denotes the ith row of X."""
 from typing import Tuple
 
 import numpy as np
-from fasta import fasta, proximal, plots, Convergence
+from fasta import fasta, proximal, plots
 from fasta.examples import ExampleProblem, test_modes
-from fasta.linalg import LinearOperator, Matrix
+from flow.linalg import LinearMap, Matrix
 from matplotlib import pyplot as plt
 from numpy import linalg as la
 
@@ -22,11 +22,10 @@ __all__ = ["MMVProblem"]
 
 
 class MMVProblem(ExampleProblem):
-    def __init__(self, A: LinearOperator, At: LinearOperator, B: Matrix, mu: float, X: Matrix=None):
+    def __init__(self, A: LinearMap, B: Matrix, mu: float, X: Matrix=None):
         """Create a multiple-measurement vector problem.
 
         :param A: The measurement operator (must be linear, often simply a matrix)
-        :param At: The Hermitian adjoint operator of A (for real matrices A, just the transpose)
         :param B: The observation matrix
         :param mu: The regularization parameter
         :param X: The problem's true solution, if known (default: None)
@@ -34,12 +33,11 @@ class MMVProblem(ExampleProblem):
         super(ExampleProblem, self).__init__()
 
         self.A = A
-        self.At = At
         self.B = B
         self.mu = mu
         self.X = X
 
-    def solve(self, X0: Matrix, fasta_options: dict=None) -> Tuple[Matrix, Convergence]:
+    def solve(self, X0: Matrix, fasta_options: dict=None):
         """Solve the multiple measurement vector (MMV) problem.
 
         :param X0: An initial guess for the solution
@@ -60,7 +58,7 @@ class MMVProblem(ExampleProblem):
 
         proxg = lambda X, t: prox_mmv(X, self.mu * t)
 
-        X = fasta(self.A, self.At, f, gradf, g, proxg, X0, **(fasta_options or {}))
+        X = fasta(self.A, f, gradf, g, proxg, X0, **(fasta_options or {}))
 
         return X.solution, X
 
@@ -90,7 +88,7 @@ class MMVProblem(ExampleProblem):
         # Initial iterate
         X0 = np.zeros((N, L))
 
-        return MMVProblem(A, A.T, B, mu, X=X), X0
+        return MMVProblem(LinearMap.mappify(A), B, mu, X=X), X0
 
     def plot(self, solution: Matrix) -> None:
         """Plot the recovered matrix against the original unknown matrix.

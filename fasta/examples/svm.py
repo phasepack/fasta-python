@@ -10,10 +10,11 @@ maximum-margin classifier. The problem is solved by formulating the dual problem
     min_y .5*||D^T L y||^2 - sum(y).
 """
 
+from typing import Tuple
 import numpy as np
 from fasta import fasta, plots
 from fasta.examples import ExampleProblem, test_modes
-from fasta.linalg import Vector, Matrix
+from flow.linalg import LinearMap, Vector, Matrix
 from matplotlib import pyplot as plt
 from numpy import linalg as la
 
@@ -57,7 +58,7 @@ class SVMProblem(ExampleProblem):
         self.C = C
         self.w = w
 
-    def solve(self, y0: Vector, fasta_options: dict=None) -> Tuple[Vector, Convergence]:
+    def solve(self, y0: Vector, fasta_options: dict=None):
         """Solve the support vector machine problem.
 
         :param Y0: An initial guess for the dual variable
@@ -70,7 +71,7 @@ class SVMProblem(ExampleProblem):
         proxg = lambda y, t: np.minimum(np.maximum(y, 0), self.C)
 
         # Solve dual problem
-        y = fasta(None, None, f, gradf, g, proxg, y0, **(fasta_options or {}))
+        y = fasta(LinearMap.identity(y0.shape), f, gradf, g, proxg, y0, **(fasta_options or {}))
 
         x = self.D.T @ (self.l * y.solution)
 

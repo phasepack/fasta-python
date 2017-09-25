@@ -7,9 +7,9 @@ of X.
 from typing import Tuple
 
 import numpy as np
-from fasta import fasta, plots, Convergence
+from fasta import fasta, plots
 from fasta.examples import ExampleProblem, test_modes
-from fasta.linalg import Matrix
+from flow.linalg import LinearMap, Matrix
 from matplotlib import pyplot as plt
 from numpy import linalg as la
 from scipy.spatial.distance import pdist, squareform
@@ -39,7 +39,7 @@ class MaxNormProblem(ExampleProblem):
         # Build the edge weight matrix
         self.S = delta - np.exp(-distances**2 / sigma**2 / 2)
 
-    def solve(self, X0: Matrix, fasta_options: dict=None) -> Tuple[Matrix, Convergence]:
+    def solve(self, X0: Matrix, fasta_options: dict=None):
         """Solve the max-norm problem.
 
         :param X0: An initial guess for the solution
@@ -58,7 +58,7 @@ class MaxNormProblem(ExampleProblem):
 
             return self.mu * X / scale[:,np.newaxis]
 
-        X = fasta(None, None, f, gradf, g, proxg, X0, **(fasta_options or {}))
+        X = fasta(LinearMap.identity(X0.shape), f, gradf, g, proxg, X0, **(fasta_options or {}))
 
         return X.solution, X
 

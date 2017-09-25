@@ -1,9 +1,10 @@
 """Solve the L1-penalized least squares problem (also known as basis pursuit denoising, or BPDN), min_x mu||x||_1 + .5||Ax-b||^2, using the FASTA solver."""
 
+from typing import Tuple
 import numpy as np
-from fasta import fasta, proximal, plots, Convergence
+from fasta import fasta, proximal, plots
 from fasta.examples import ExampleProblem, test_modes
-from fasta.linalg import LinearOperator, Vector
+from flow.linalg import LinearMap, Vector
 from matplotlib import pyplot as plt
 from numpy import linalg as la
 
@@ -13,11 +14,10 @@ __all__ = ["SparseLeastSquaresProblem"]
 
 
 class SparseLeastSquaresProblem(ExampleProblem):
-    def __init__(self, A: LinearOperator, At: LinearOperator, b: Vector, mu: float, x: Vector=None):
+    def __init__(self, A: LinearMap, b: Vector, mu: float, x: Vector=None):
         """Create an instance of the sparse least squares problem.
 
         :param A: The measurement operator (must be linear, often simply a matrix)
-        :param At: The Hermitian adjoint operator of A (for real matrices A, just the transpose)
         :param b: The observation vector
         :param mu: The regularization parameter
         :param x: The true value of the unknown signal, if known (default: None)
@@ -25,12 +25,11 @@ class SparseLeastSquaresProblem(ExampleProblem):
         super(ExampleProblem, self).__init__()
 
         self.A = A
-        self.At = At
         self.b = b
         self.mu = mu
         self.x = x
 
-    def solve(self, x0: Vector, fasta_options: dict=None) -> Tuple[Vector, Convergence]:
+    def solve(self, x0: Vector, fasta_options: dict=None):
         """Solve the L1-penalized least squares problem.
 
         :param x0: An initial guess for the solution
@@ -42,7 +41,7 @@ class SparseLeastSquaresProblem(ExampleProblem):
         g = lambda x: self.mu * la.norm(x.ravel(), 1)
         proxg = lambda x, t: proximal.shrink(x, t*self.mu)
 
-        x = fasta(self.A, self.At, f, gradf, g, proxg, x0, **(fasta_options or {}))
+        x = fasta(self.A, f, gradf, g, proxg, x0, **(fasta_options or {}))
 
         return x.solution, x
 
@@ -72,7 +71,7 @@ class SparseLeastSquaresProblem(ExampleProblem):
         # Initial iterate
         x0 = np.zeros(N)
 
-        return SparseLeastSquaresProblem(A, A.T, b, mu, x=x), x0
+        return SparseLeastSquaresProblem(LinearMap.mappify(A), b, mu, x=x), x0
 
     def plot(self, solution: Vector) -> None:
         """Plot the recovered signal against the original unknown signal.

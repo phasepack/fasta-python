@@ -9,10 +9,11 @@ This is accomplished by forming the dual problem,
     min_Y .5*||div(grad(Y)) - M/mu||^2.
 """
 
+from typing import Tuple
 import numpy as np
-from fasta import fasta, plots, Convergence
+from fasta import fasta, plots
 from fasta.examples import ExampleProblem, test_modes
-from fasta.linalg import Matrix
+from flow.linalg import LinearMap, Matrix
 from matplotlib import pyplot as plt
 from numpy import linalg as la
 from scipy.misc import ascent
@@ -74,7 +75,7 @@ class TVDenoisingProblem(ExampleProblem):
         self.M = M
         self.mu = mu
 
-    def solve(self, Y0: Matrix, fasta_options: dict=None) -> Tuple[Matrix, Convergence]:
+    def solve(self, Y0: Matrix, fasta_options: dict=None):
         """Solve the total variation denoising problem.
 
         :param Y0: An initial guess for the gradient of the solution
@@ -95,7 +96,7 @@ class TVDenoisingProblem(ExampleProblem):
             return Y / norms[...,np.newaxis]
 
         # Solve dual problem
-        Y = fasta(div, grad, f, gradf, g, proxg, Y0, **(fasta_options or {}))
+        Y = fasta(LinearMap(div, grad, Y0.shape, div(Y0).shape), f, gradf, g, proxg, Y0, **(fasta_options or {}))
 
         X = self.M - self.mu * div(Y.solution)
 

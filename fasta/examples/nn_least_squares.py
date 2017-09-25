@@ -1,9 +1,11 @@
 """Solve the non-negative least squares problem, min_x .5||Ax-b||^2, x >= 0, using the FASTA solver."""
 
+from typing import Tuple
+
 import numpy as np
-from fasta import fasta, plots, Convergence
+from fasta import fasta, plots
 from fasta.examples import ExampleProblem, test_modes
-from fasta.linalg import LinearOperator, Vector
+from flow.linalg import LinearMap, Vector, Matrix
 from matplotlib import pyplot as plt
 from numpy import linalg as la
 
@@ -13,22 +15,20 @@ __all__ = ["NNLeastSquaresProblem"]
 
 
 class NNLeastSquaresProblem(ExampleProblem):
-    def __init__(self, A: LinearOperator, At: LinearOperator, b: Matrix, x: Matrix):
+    def __init__(self, A: LinearMap, b: Matrix, x: Matrix):
         """Create an instance of the non-negative least squares problem.
 
         :param A: The measurement operator (must be linear, often simply a matrix)
-        :param At: The Hermitian adjoint operator of A (for real matrices A, just the tranpose)
         :param b: The observation vector
         :param x: The true value of the unknown signal, if known (default: None)
         """
         super(ExampleProblem, self).__init__()
 
         self.A = A
-        self.At = At
         self.b = b
         self.x = x
 
-    def solve(self, x0: Matrix, fasta_options: float=None) -> Tuple[Vector, Convergence]:
+    def solve(self, x0: Matrix, fasta_options: float=None):
         """Solve the non-negative least squares problem.
 
         :param x0: An initial guess for the solution
@@ -40,12 +40,12 @@ class NNLeastSquaresProblem(ExampleProblem):
         g = lambda x: 0
         proxg = lambda x, t: np.maximum(x, 0)
 
-        x = fasta(self.A, self.At, f, gradf, g, proxg, x0, **(fasta_options or {}))
+        x = fasta(self.A, f, gradf, g, proxg, x0, **(fasta_options or {}))
 
         return x.solution, x
 
     @staticmethod
-    def construct(M: int=200, N: int=1000, K: int=10, sigma: float=0.005) -> Tuple["NNLeastSquaresProblem", Convergence]:
+    def construct(M: int=200, N: int=1000, K: int=10, sigma: float=0.005):
         """Construct a sample non-negative least squares problem with a random sparse signal and measurement matrix.
 
         :param M: The number of measurements (default: 200)
@@ -68,7 +68,7 @@ class NNLeastSquaresProblem(ExampleProblem):
         # Initial iterate
         x0 = np.zeros(N)
 
-        return NNLeastSquaresProblem(A, A.T, b, x=x), x0
+        return NNLeastSquaresProblem(LinearMap.mappify(A), b, x=x), x0
 
     def plot(self, solution: Vector) -> None:
         # Plot the recovered signal
