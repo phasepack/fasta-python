@@ -5,12 +5,13 @@ The solver promotes a solution with low dynamic range."""
 from typing import Tuple
 
 import numpy as np
-from fasta import fasta, proximal, plots, Convergence
+from fasta import fasta, proximal, plots
 from fasta.examples import ExampleProblem, test_modes
-from fasta.linalg import LinearOperator, Vector
 from matplotlib import pyplot as plt
 from numpy import linalg as la
 from scipy.fftpack import dct, idct
+
+from flow.linalg import LinearMap, Vector
 
 __author__ = "Noah Singer"
 
@@ -18,7 +19,7 @@ __all__ = ["DemocraticRepresentationProblem"]
 
 
 class DemocraticRepresentationProblem(ExampleProblem):
-    def __init__(self, A: LinearOperator, b: Vector, mu: float):
+    def __init__(self, A: LinearMap, b: Vector, mu: float):
         """Instantiate an instance of the democratic representation problem.
 
         :param A: The measurement operator (must be linear, often simply a matrix)
@@ -31,7 +32,7 @@ class DemocraticRepresentationProblem(ExampleProblem):
         self.b = b
         self.mu = mu
 
-    def solve(self, x0: Vector, fasta_options: dict=None) -> Tuple[Vector, Convergence]:
+    def solve(self, x0: Vector, fasta_options: dict=None):
         """Solve the democratic representation problem.
 
         :param x0: An initial guess for the solution
@@ -76,9 +77,9 @@ class DemocraticRepresentationProblem(ExampleProblem):
         # Initial iterate
         x0 = np.zeros(N)
 
-        return DemocraticRepresentationProblem(LinearOperator(lambda x: mask * dct(x, norm='ortho'),
+        return DemocraticRepresentationProblem(LinearMap(lambda x: mask * dct(x, norm='ortho'),
                                                               lambda x: idct(mask * x, norm='ortho'),
-                                                              x0.shape), b, mu), x0
+                                                              x0.shape, x0.shape), b, mu), x0
 
     def plot(self, solution: Vector) -> None:
         """Plot the computed democratic representation against the original signal.
